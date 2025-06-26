@@ -1,0 +1,15 @@
+targets:
+  $default:
+    builders:
+      example|hydrate:
+        enabled: true
+        generate_for:
+          - lib/stores/**.dart
+
+builders:
+  hydrate:
+    import: "package:example/testgeneration/generator/builder.dart"
+    builder_factories: ["hydrateBuilder"]
+    build_extensions: {".dart": [".hydrated.dart"]}
+    build_to: source
+    applies_builders: [] 

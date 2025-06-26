@@ -1,0 +1,824 @@
+i want to make great persisted signals package that will be better than this code on bottom. I want to just use this created class in my stores and dont worry anymore.
+i want to just call myStore.waitForHydration(), and other stuff.
+
+i want that user who install this package can choose their own storage, it doesnt have to be sembast, i wanna use sembast in my example folder, but that custom storage has to extend from my defined storage class (abstract? idk).
+
+also i want this package be VERY EASY to USE. like getIt, i will initialize it in main and then use instance anywhere for example.
+
+
+
+STORE:
+
+import 'package:signals/signals_flutter.dart';
+import 'package:stage_ocean/common/services/api.service.dart';
+import 'package:stage_ocean/common/services/dependency.service.dart';
+import 'package:stage_ocean/common/services/sync.service.dart';
+import 'package:stage_ocean/common/utils/signals/hydratable_store.mixin.dart';
+import 'package:stage_ocean/common/utils/signals/stored_list_signal.dart';
+import 'package:stage_ocean/event/stores/event.store.dart';
+import 'package:stage_ocean/places/models/place.model.dart';
+import 'package:stage_ocean/places/models/place_category.model.dart';
+
+class PlacesStore with HydratableStore {
+  final ApiService api;
+  final EventStore eventStore;
+
+  late final StoredListSignal<Place> places;
+  late final StoredListSignal<PlaceCategory> categories;
+
+  PlacesStore({required this.api, required this.eventStore}) {
+    places = storedList<Place>('places', Place.fromJson);
+    categories =
+        storedList<PlaceCategory>('places-categories', PlaceCategory.fromJson);
+  }
+
+  late final filters =
+      computed(() => places.value.where((item) => item.isFilter).toList());
+
+  late final sync = getIt<SyncService>(
+    param1: SyncConfig(
+      id: 'places',
+      watch: [SyncWatchable.locale],
+      expirationInterval: Duration(minutes: 15),
+      fetchData: (api) async {
+        final [categoriesData, locationsData] = await Future.wait([
+          api.$get(PlaceCategory.endpoint, params: {'perPage': 100}),
+          api.$get(Place.endpoint, params: {
+            'eventId': eventStore.current.value?.id,
+            'preload': ['locations', 'categories'],
+            'perPage': 300,
+          }),
+        ]);
+
+        batch(() {
+          places.value = locationsData;
+          categories.value = categoriesData;
+        });
+      },
+    ),
+  );
+}
+
+HYDRATABLE_STORE 
+
+import 'package:get_it/get_it.dart';
+import 'package:sembast/sembast.dart';
+import 'package:stage_ocean/common/mixins/storable.mixin.dart';
+import 'package:stage_ocean/common/utils/signals/stored_list_signal.dart';
+import 'package:stage_ocean/common/utils/signals/stored_set_signal.dart';
+import 'package:stage_ocean/common/utils/signals/stored_signal.dart';
+import 'package:stage_ocean/news/models/news.model.dart';
+
+mixin HydratableStore implements Disposable {
+  final _storedSignals = <dynamic>[];
+
+  StoredListSignal<News> storedNews(
+    String key,
+  ) {
+    return storedList<News>(
+      key,
+      News.fromJson,
+      sortOrders: [SortOrder('publishedAt', false)],
+    );
+  }
+
+  StoredListSignal<T> storedList<T extends Storable>(
+    String key,
+    T Function(Map<String, dynamic>) fromJson, {
+    List<T> initialValue = const [],
+    List<SortOrder>? sortOrders,
+  }) {
+    final signal = StoredListSignal<T>(
+      key,
+      fromJson,
+      initialValue: initialValue,
+      sortOrders: sortOrders,
+    );
+    registerSignal(signal);
+    return signal;
+  }
+
+  StoredSetSignal<E> storedSet<E>(
+    String key, {
+    Set<E> initialValue = const {},
+  }) {
+    final signal = StoredSetSignal<E>(
+      initialValue,
+      key,
+    );
+    registerSignal(signal);
+    return signal;
+  }
+
+  // For primitive types
+  StoredSignal<T?> storedValue<T>(
+    String key, {
+    T? initialValue,
+    bool clearCache = false,
+  }) {
+    final signal =
+        StoredSignal<T?>(initialValue, key: key, clearCache: clearCache);
+    registerSignal(signal);
+    return signal;
+  }
+
+  // For non-nullable types
+  StoredSignal<T> storedValueRequired<T>(
+    String key, {
+    required T initialValue,
+  }) {
+    final signal = StoredSignal<T>(initialValue, key: key);
+    registerSignal(signal);
+    return signal;
+  }
+
+  StoredMapSignal<T?> storedMap<T>(
+    String key,
+    T Function(Map<String, dynamic> json) fromJson, {
+    T? initialValue,
+  }) {
+    final signal = StoredMapSignal<T?>(initialValue, key, fromJson);
+    registerSignal(signal);
+    return signal;
+  }
+
+  StoredSimpleListSignal<T> storedSimpleList<T>(
+    String key,
+    T Function(Map<String, dynamic> json) fromJson, {
+    List<T> initialValue = const [],
+  }) {
+    final signal =
+        StoredSimpleListSignal<T>(key, fromJson, initialValue: initialValue);
+    registerSignal(signal);
+    return signal;
+  }
+
+  StoredEnumSignal<E?> storedEnum<E extends Enum>(
+    String key,
+    List<E> values, {
+    E? initialValue,
+  }) {
+    final signal = StoredEnumSignal<E?>(initialValue, key, values);
+    registerSignal(signal);
+    return signal;
+  }
+
+  void registerSignal(dynamic signal) {
+    _storedSignals.add(signal);
+  }
+
+  Future<void> waitForHydration() =>
+      Future.wait(_storedSignals.map((s) => s.waitForHydration()));
+
+  @override
+  void onDispose() {
+    for (var s in _storedSignals) {
+      s.dispose();
+    }
+    _storedSignals.clear();
+  }
+}
+
+STORED_LIST_SIGNAL
+
+import 'dart:async';
+
+import 'package:signals/signals_flutter.dart';
+import 'package:sembast/sembast.dart';
+import 'package:stage_ocean/common/mixins/storable.mixin.dart';
+import 'package:stage_ocean/common/services/dependency.service.dart';
+import 'package:stage_ocean/common/services/storage.service.dart';
+
+class StoredListSignal<T extends Storable> extends ListSignal<T> {
+  final String key;
+  final T Function(Map<String, dynamic>) fromJson;
+  final StorageService storage;
+  final List<SortOrder>? sortOrders;
+  late StreamSubscription _subscription;
+
+  bool isHydrated = false;
+  bool isSetInitialy = false;
+  final Completer<void> _hydrationCompleter = Completer<void>();
+
+  StoredListSignal(
+    this.key,
+    this.fromJson, {
+    List<T> initialValue = const [],
+    this.sortOrders,
+  })  : storage = getIt<StorageService>(),
+        super(initialValue) {
+    _loadData();
+  }
+
+  Future<void> waitForHydration() => _hydrationCompleter.future;
+
+  Future<void> _loadData() async {
+    try {
+      final data = await storage.getRecords(key, sortOrders: sortOrders);
+      if (!isSetInitialy) {
+        value = data;
+      }
+    } finally {
+      if (!isHydrated) {
+        isHydrated = true;
+        _hydrationCompleter.complete();
+      }
+    }
+  }
+
+  @override
+  set value(List<dynamic>? newValue) {
+    isSetInitialy = true;
+    if (newValue == null) {
+      super.value = [];
+    } else {
+      super.value =
+          newValue.map((e) => fromJson(e as Map<String, dynamic>)).toList();
+    }
+    storage.setRecords(key, value);
+  }
+
+  @override
+  void add(T value) {
+    final existingIndex = indexWhere((item) => item.id == value.id);
+    if (existingIndex >= 0) {
+      super[existingIndex] = value;
+      storage.updateRecord(key, value.id, value.toJson());
+    } else {
+      super.add(value);
+      storage.addRecord(key, value);
+    }
+  }
+
+  @override
+  void addAll(Iterable<T> iterable) {
+    super.addAll(iterable);
+    storage.addRecords(key, iterable.toList());
+  }
+
+  @override
+  bool remove(Object? value) {
+    if (value is T) {
+      final removed = super.remove(value);
+      if (removed) {
+        storage.deleteRecord(key, value.id);
+      }
+      return removed;
+    }
+    return false;
+  }
+
+  @override
+  T removeAt(int index) {
+    final item = super.removeAt(index);
+    storage.deleteRecord(key, item.id);
+    return item;
+  }
+
+  @override
+  void removeWhere(bool Function(T element) test) {
+    final itemsToRemove = where(test).toList();
+    super.removeWhere(test);
+    storage.deleteRecords(key, itemsToRemove.map((e) => e.id).toList());
+  }
+
+  @override
+  void clear() {
+    super.clear();
+    storage.clearStore(key);
+  }
+
+  Future<T?> updateItem(String id, Map<String, dynamic> data) async {
+    final index = indexWhere((item) => item.id == id);
+    if (index >= 0) {
+      final currentItem = this[index];
+      final updatedJson = {...currentItem.toJson(), ...data};
+      final updatedItem = fromJson(updatedJson);
+
+      super[index] = updatedItem;
+      storage.updateRecord(key, id, data);
+      return updatedItem;
+    }
+
+    final newItem = fromJson(data);
+    add(newItem);
+    return newItem;
+  }
+
+  // Future<List<T>> filterItems(Filter filter) async {
+  //   final data = await storage.getRecords(key, filter: filter);
+  //   return data.map(fromJson).toList();
+  // }
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
+
+STORED_SIGNAL
+
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:signals/signals_flutter.dart';
+import 'package:stage_ocean/common/services/dependency.service.dart';
+import 'package:stage_ocean/common/services/storage.service.dart';
+
+class StoredSignal<T> extends FlutterSignal<T> with StoredSignalMixin<T> {
+  @override
+  final String key;
+
+  @override
+  final KeyValueStore store;
+
+  @override
+  final bool clearCache;
+
+  StoredSignal(
+    super.internalValue, {
+    super.autoDispose,
+    super.debugLabel,
+    this.clearCache = false,
+    required this.key,
+  }) : store = getIt<StorageService>() {
+    init().ignore();
+  }
+}
+
+mixin StoredSignalMixin<T> on Signal<T> {
+  String get key;
+  KeyValueStore get store;
+  bool get clearCache;
+
+  bool isHydrated = false;
+  bool isSetInitialy = false;
+
+  final Completer<void> _hydrationCompleter = Completer<void>();
+
+  Future<void> waitForHydration() => _hydrationCompleter.future;
+
+  Future<void> init() async {
+    if (clearCache) await clear();
+    try {
+      final val = await load();
+      if (!isSetInitialy) {
+        super.value = val;
+      }
+    } catch (e) {
+      debugPrint('Error loading persisted signal: $e');
+    } finally {
+      isHydrated = true;
+      _hydrationCompleter.complete();
+    }
+  }
+
+  // @override
+  // T get value {
+  //   return super.value;
+  // }
+
+  @override
+  set value(T value) {
+    isSetInitialy = true;
+    super.value = value;
+    save(value).ignore();
+  }
+
+  Future<T> load() async {
+    final val = await store.getValue(key);
+    if (val == null) return value;
+    return decode(val);
+  }
+
+  Future<void> save(T value) async {
+    final str = encode(value);
+    await store.setValue(key, str);
+  }
+
+  Future<void> clear() async {
+    await store.clear(key);
+  }
+
+  T decode(String value) => jsonDecode(value);
+
+  String encode(T value) => jsonEncode(value);
+}
+
+class StoredEnumSignal<T extends Enum?> extends StoredSignal<T> {
+  final List<T> values;
+
+  StoredEnumSignal(super.val, String key, this.values, {super.clearCache})
+      : super(key: key);
+
+  @override
+  T decode(String value) => values.firstWhere((e) => e?.name == value);
+
+  @override
+  String encode(T value) => value!.name;
+}
+
+class StoredMapSignal<T> extends StoredSignal<T> {
+  final T Function(Map<String, dynamic> json) fromJson;
+
+  StoredMapSignal(super.val, String key, this.fromJson, {super.clearCache})
+      : super(key: key);
+
+  @override
+  T decode(String value) {
+    if (value.isEmpty) return null as T;
+    return fromJson(jsonDecode(value));
+  }
+
+  @override
+  String encode(T value) {
+    if (value == null) return '';
+    final dynamic json = (value as dynamic).toJson();
+    return jsonEncode(json);
+  }
+}
+
+class StoredSimpleListSignal<T> extends StoredSignal<List<T>> {
+  final T Function(Map<String, dynamic> json) fromJson;
+
+  StoredSimpleListSignal(String key, this.fromJson,
+      {List<T> initialValue = const [], bool clearCache = false})
+      : super(initialValue, key: key, clearCache: clearCache);
+
+  @override
+  set value(List<dynamic> value) {
+    isSetInitialy = true;
+    super.value = value.map((e) => fromJson(e)).toList();
+    save(super.value).ignore();
+  }
+
+  @override
+  List<T> decode(String value) {
+    if (value.isEmpty) return [];
+    final List<dynamic> jsonList = jsonDecode(value);
+    return jsonList.map((e) => fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  @override
+  String encode(List<T> value) {
+    final jsonList = value.map((e) => (e as dynamic).toJson()).toList();
+    return jsonEncode(jsonList);
+  }
+}
+
+SYNC_SERVICE
+
+import 'package:flutter/material.dart';
+import 'package:signals/signals_flutter.dart';
+import 'package:stage_ocean/common/services/api.service.dart';
+import 'package:stage_ocean/common/services/dependency.service.dart';
+import 'package:stage_ocean/common/services/logger.service.dart';
+import 'package:stage_ocean/common/services/storage.service.dart';
+import 'package:stage_ocean/common/stores/app.store.dart';
+import 'package:stage_ocean/menu/stores/settings.store.dart';
+import 'package:stage_ocean/user/stores/user.store.dart';
+
+enum SyncWatchable {
+  locale,
+  user,
+}
+
+class SyncConfig {
+  final String id;
+  final Duration expirationInterval;
+  final Future<dynamic> Function(ApiService api) fetchData;
+  final List<SyncWatchable>? watch;
+
+  const SyncConfig({
+    required this.id,
+    required this.expirationInterval,
+    required this.fetchData,
+    this.watch,
+  });
+}
+
+class SyncData {
+  final String? userId;
+  final String? locale;
+  final DateTime timestamp;
+  final String? simulatedDate;
+  final String id;
+
+  SyncData({
+    this.userId,
+    this.locale,
+    required this.timestamp,
+    required this.id,
+    this.simulatedDate,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'userId': userId,
+        'locale': locale,
+        'timestamp': timestamp.toIso8601String(),
+        'id': id,
+        'simulatedDate': simulatedDate,
+      };
+
+  factory SyncData.fromJson(Map<String, dynamic> json) => SyncData(
+        userId: json['userId'],
+        locale: json['locale'],
+        timestamp: DateTime.parse(json['timestamp']),
+        id: json['id'],
+        simulatedDate: json['simulatedDate'],
+      );
+}
+
+class SyncService {
+  final dynamic _id;
+  final Future<void> Function() fetchData;
+  final Duration expirationInterval;
+  final Signal<bool> isLoading = Signal<bool>(false);
+  final bool forceRefetchOnKeyChange;
+  final bool Function()? disabled;
+  final StorageService storage;
+  final List<SyncWatchable>? watch;
+
+  final UserStore _userStore;
+  final SettingsStore _settingsStore;
+  final AppStore _appStore;
+  String? _lastUsedId;
+  bool _isInvalidated = false;
+
+  String get id => _id is Function ? _id() : _id;
+
+  SyncService({
+    required dynamic id,
+    required this.fetchData,
+    required this.expirationInterval,
+    required this.storage,
+    this.forceRefetchOnKeyChange = false,
+    this.disabled,
+    this.watch,
+  })  : _id = id,
+        _userStore = getIt<UserStore>(),
+        _settingsStore = getIt<SettingsStore>(),
+        _appStore = getIt<AppStore>() {
+    assert(_id is String || _id is Function,
+        'id must be either String or Function that returns String');
+  }
+
+  void invalidate() {
+    debugPrint('Invalidating sync for $id');
+    _isInvalidated = true;
+  }
+
+  Future<void> call({bool force = false}) async {
+    if (disabled?.call() == true) return;
+
+    final currentId = id;
+    if (_lastUsedId != null &&
+        _lastUsedId != currentId &&
+        forceRefetchOnKeyChange) {
+      force = true;
+    }
+    _lastUsedId = currentId;
+    if (isLoading.value || (!_isInvalidated && !await isSyncNeeded(force))) {
+      return;
+    }
+
+    isLoading.value = true;
+    try {
+      Logger.i('Syncing data for $id');
+      await fetchData();
+      saveSyncData().ignore();
+      _isInvalidated = false;
+    } catch (e, s) {
+      Logger.e('[$id] Error syncing data', exception: e, stackTrace: s);
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<bool> isSyncNeeded(bool force) async {
+    if (force) return true;
+
+    final lastSync = await getLastSyncData();
+    if (lastSync == null) return true;
+
+    final difference = DateTime.now().difference(lastSync.timestamp);
+    if (difference < expirationInterval) {
+      if (lastSync.simulatedDate != _appStore.simulatedDate.value) {
+        Logger.i('Simulated date has changed, syncing $id');
+        return true;
+      }
+
+      if (watch != null && watch!.isNotEmpty) {
+        // Check if user or locale has changed
+        if (watch!.contains(SyncWatchable.user) &&
+            lastSync.userId != _userStore.user.value?.id) {
+          Logger.i('User has changed, syncing $id');
+          return true;
+        }
+        if (watch!.contains(SyncWatchable.locale) &&
+            lastSync.locale != _settingsStore.locale.value?.languageCode) {
+          Logger.i('Locale has changed, syncing $id');
+          return true;
+        }
+      }
+      Logger.d('Skipping sync for $id');
+      return false;
+    }
+
+    return true;
+  }
+
+  Future<SyncData?> getLastSyncData() async {
+    return await storage.getSyncData(id);
+  }
+
+  Future<void> saveSyncData() async {
+    await storage.saveSyncData(SyncData(
+      id: id,
+      timestamp: DateTime.now(),
+      userId: _userStore.user.value?.id,
+      locale: _settingsStore.locale.value?.languageCode,
+      simulatedDate: _appStore.simulatedDate.value,
+    ));
+  }
+
+  Future<void> refetch() async {
+    call(force: true);
+  }
+
+  void dispose() {
+    isLoading.dispose();
+  }
+}
+
+STORAGE
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
+import 'package:sembast/sembast_io.dart';
+import 'package:stage_ocean/common/mixins/storable.mixin.dart';
+import 'package:stage_ocean/common/services/sync.service.dart';
+
+abstract class KeyValueStore {
+  Future<void> setValue<T>(String key, T value);
+  Future<T?> getValue<T>(String key);
+  Future<void> deleteValue(String key);
+  Future<void> clear(String key);
+}
+
+class StorageService implements KeyValueStore {
+  static const String dbName = 'stage_ocean_db.db';
+  static const String syncStoreName = 'sync_store';
+  static const int dbVersion = 1;
+  late Database _db;
+
+  Future<StorageService> init() async {
+    final appDir = await getApplicationDocumentsDirectory();
+    final dbPath = path.join(appDir.path, dbName);
+    _db = await databaseFactoryIo.openDatabase(dbPath, version: dbVersion);
+    return this;
+  }
+
+  StoreRef<String, Map<String, dynamic>> _getStore(String storeName) {
+    return stringMapStoreFactory.store(storeName);
+  }
+
+  // Replace all records in a store with the provided list
+  Future<void> setRecords<T extends Storable>(
+      String storeName, List<T> items) async {
+    final store = _getStore(storeName);
+
+    return _db.transaction((txn) async {
+      // Clear all existing records in the store
+      await store.delete(txn);
+
+      // Add all new records
+      await Future.wait(items.map((item) {
+        return store.record(item.id).put(txn, item.toJson());
+      }));
+    });
+  }
+
+  // Add or update multiple records using their existing IDs
+  Future<void> addRecords<T extends Storable>(
+      String storeName, List<T> items) async {
+    final store = _getStore(storeName);
+
+    return _db.transaction((txn) async {
+      await Future.wait(items.map((item) {
+        return store.record(item.id).put(txn, item.toJson());
+      }));
+    });
+  }
+
+  Future<T> addRecord<T extends Storable>(String storeName, T item) async {
+    final store = _getStore(storeName);
+
+    return _db.transaction((txn) async {
+      await store.record(item.id).add(txn, item.toJson());
+      return item;
+    });
+  }
+
+  Future<void> updateRecord(
+      String storeName, String id, Map<String, dynamic> data) async {
+    final store = _getStore(storeName);
+    await store.record(id).update(_db, data);
+  }
+
+  Future<Map<String, dynamic>?> getRecord(String storeName, String id) async {
+    final store = _getStore(storeName);
+    return await store.record(id).get(_db);
+  }
+
+  Future<List<Map<String, dynamic>>> getRecords(
+    String storeName, {
+    Filter? filter,
+    List<SortOrder>? sortOrders,
+  }) async {
+    final store = _getStore(storeName);
+    final finder = Finder(filter: filter, sortOrders: sortOrders);
+    return (await store.find(_db, finder: finder)).map((e) => e.value).toList();
+  }
+
+  Future<String?> deleteRecord(String storeName, String id) async {
+    final store = _getStore(storeName);
+
+    try {
+      return await store.record(id).delete(_db);
+    } catch (e) {
+      print('error deleting record: $e');
+      return null;
+    }
+  }
+
+  Future<void> deleteRecords(String storeName, List<String> ids) async {
+    final store = _getStore(storeName);
+
+    try {
+      await _db.transaction((txn) async {
+        await Future.wait(
+          ids.map((id) => store.record(id).delete(txn)),
+        );
+      });
+    } catch (e) {
+      print('Failed to delete records: $e');
+    }
+  }
+
+  Future<void> clearStore(String storeName) async {
+    final store = _getStore(storeName);
+    await store.delete(_db);
+  }
+
+  // Listen to store changes
+  Stream<List<RecordSnapshot<String, Map<String, dynamic>>>> watchStore(
+      String storeName) {
+    final store = _getStore(storeName);
+    return store.query().onSnapshots(_db);
+  }
+
+  Future<void> saveSyncData(SyncData data) async {
+    final store = _getStore(syncStoreName);
+
+    await store.record(data.id).put(_db, data.toJson());
+  }
+
+  Future<SyncData?> getSyncData(String id) async {
+    final store = _getStore(syncStoreName);
+    final record = await store.record(id).get(_db);
+
+    return record != null ? SyncData.fromJson(record) : null;
+  }
+
+  /// Gets a primitive value from storage
+  @override
+  Future<T?> getValue<T>(String key) async {
+    final store = StoreRef.main();
+    final record = await store.record(key).get(_db) as T;
+    return record;
+  }
+
+  /// Sets a primitive value in storage
+  @override
+  Future<void> setValue<T>(String key, T value) async {
+    final store = StoreRef.main();
+    await store.record(key).put(_db, value);
+  }
+
+  /// Deletes a primitive value from storage
+  @override
+  Future<void> deleteValue(String key) async {
+    final store = StoreRef.main();
+    await store.record(key).delete(_db);
+  }
+
+  @override
+  Future<void> clear(String storeName) async {
+    final store = StoreRef.main();
+    await store.delete(_db);
+  }
+}
+
+this code is OLD i want IT BETTER, DONT COPY EVERYTHING
