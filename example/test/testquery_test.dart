@@ -2,12 +2,10 @@
 // Tests help us catch bugs early and ensure our code behaves as expected
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:example/testquery/query_client.dart';
-import 'package:example/testquery/query_types.dart';
-import 'package:example/testquery/query.dart';
-import 'package:example/testquery/mutation.dart';
+import 'package:persist_signals/testquery/query_client.dart';
 import 'package:persist_signals/persist_signals.dart';
 import 'package:persist_signals/storage/base_persisted_storage.abstract.dart';
+import 'package:persist_signals/testquery/types/query_types.dart';
 
 // Simple in-memory storage for testing
 class MockStorage implements BasePersistedStorage {

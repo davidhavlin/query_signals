@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:persist_signals/persist_signals.dart';
 import 'package:persist_signals/storage/base_persisted_storage.abstract.dart';
+import 'package:persist_signals/storage/storable.types.dart';
 import 'package:signals/signals_flutter.dart';
 
 /// A persisted list signal that handles individual item operations efficiently
@@ -184,9 +184,4 @@ class PersistedComplexListSignal<T extends HasId> extends ListSignal<T> {
     final record = await store.getRecord(key, id);
     return record != null ? fromJson(record) : null;
   }
-}
-
-/// Interface that items must implement to be used with PersistedComplexListSignal
-abstract class HasId {
-  String get id;
 }
