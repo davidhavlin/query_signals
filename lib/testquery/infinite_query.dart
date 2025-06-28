@@ -1,6 +1,10 @@
 import 'dart:async';
+import 'package:persist_signals/testquery/models/infinite_query_data.model.dart';
+import 'package:persist_signals/testquery/models/infinite_query_options.model.dart';
+import 'package:persist_signals/testquery/models/query_error.model.dart';
+import 'package:persist_signals/testquery/models/query_key.model.dart';
 import 'package:signals/signals_flutter.dart';
-import 'types/query_types.dart';
+import 'enums/query_status.enum.dart';
 import 'query_client.dart';
 
 /// A reactive infinite query that handles paginated data fetching

@@ -1,5 +1,7 @@
+import 'package:persist_signals/testquery/models/query_error.model.dart';
+import 'package:persist_signals/testquery/models/query_mutation_options.model.dart';
 import 'package:signals/signals_flutter.dart';
-import 'types/query_types.dart';
+import 'enums/query_status.enum.dart';
 import 'query_client.dart';
 
 class Mutation<TData extends Object?, TVariables extends Object?> {

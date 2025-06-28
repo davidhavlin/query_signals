@@ -1,10 +1,12 @@
 import 'package:example/posts/models/post.model.dart';
 import 'package:example/comments/models/comment.model.dart';
 import 'package:example/shared/service/api.service.dart';
+import 'package:persist_signals/testquery/models/query_error.model.dart';
+import 'package:persist_signals/testquery/models/query_mutation_options.model.dart';
+import 'package:persist_signals/testquery/models/query_options.model.dart';
 import 'package:persist_signals/testquery/query_client.dart';
 import 'package:persist_signals/testquery/query.dart';
 import 'package:persist_signals/testquery/mutation.dart';
-import 'package:persist_signals/testquery/types/query_types.dart';
 
 class PostsStore {
   final _client = QueryClient();
@@ -28,13 +30,25 @@ class PostsStore {
     return response['comments'] as List<dynamic>;
   }
 
+  Future<Map<String, dynamic>> updatePost(
+    String postId, {
+    String? title,
+  }) async {
+    print('CALL updatePost: $postId with title: $title');
+    final response = await api.$patch(
+      '/posts/$postId',
+      data: {if (title != null) 'title': title},
+    );
+    return response;
+  }
+
   // Posts list query
   late final posts = _client.useQuery<List<Post>, List<dynamic>>(
     ['posts'], // Cache key
     fetchPosts, // Pure API function
     options: QueryOptions(
-      staleDuration: Duration(minutes: 1), // When to background refresh
-      cacheDuration: Duration(minutes: 5), // How long to cache
+      staleDuration: Duration(minutes: 10), // When to background refresh
+      cacheDuration: Duration(hours: 5), // How long to cache
       transformer:
           (jsonList) => // Transform raw JSON to models
               jsonList.map((json) => Post.fromJson(json)).toList(),
@@ -84,6 +98,34 @@ class PostsStore {
           _client.invalidateQueries(['posts']);
           _client.invalidateQueries(['post-detail']);
           onSuccess?.call();
+        },
+        onError: onError,
+      ),
+    );
+  }
+
+  // Update post mutation factory
+  Mutation<Post, Map<String, String>> updatePostMutation({
+    Function(Post)? onSuccess,
+    Function(QueryError)? onError,
+  }) {
+    return _client.useMutation<Post, Map<String, String>>(
+      (params) async {
+        final postId = params['postId']!;
+        final title = params['title'];
+        final response = await updatePost(postId, title: title);
+        return Post.fromJson(response);
+      },
+      options: MutationOptions(
+        onSuccess: (updatedPost) {
+          // Update the specific post in cache
+          _client.setQueryData([
+            'post-detail',
+            updatedPost.id.toString(),
+          ], updatedPost);
+          // Invalidate the posts list to refresh it
+          _client.invalidateQueries(['posts']);
+          onSuccess?.call(updatedPost);
         },
         onError: onError,
       ),

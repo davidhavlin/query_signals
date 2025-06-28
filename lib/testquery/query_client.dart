@@ -2,7 +2,13 @@ import 'dart:convert';
 import 'package:persist_signals/persist_signals.dart';
 import 'package:persist_signals/storage/base_persisted_storage.abstract.dart';
 import 'package:persist_signals/storage/storable.types.dart';
-import 'types/query_types.dart';
+import 'package:persist_signals/testquery/models/infinite_query_data.model.dart';
+import 'package:persist_signals/testquery/models/infinite_query_options.model.dart';
+import 'package:persist_signals/testquery/models/query_client_config.model.dart';
+import 'package:persist_signals/testquery/models/query_key.model.dart';
+import 'package:persist_signals/testquery/models/query_mutation_options.model.dart';
+import 'package:persist_signals/testquery/models/query_options.model.dart';
+import 'enums/query_status.enum.dart';
 import 'query.dart';
 import 'mutation.dart';
 import 'infinite_query.dart';
@@ -325,6 +331,7 @@ class QueryClient {
       final encoded = jsonEncode(data);
       await _storage.set(storeKey, encoded);
     } catch (e) {
+      print('Error setting cached data: $e');
       // Silent fail - cache is not critical
     }
   }

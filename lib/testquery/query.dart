@@ -1,15 +1,11 @@
 import 'dart:async';
+import 'package:persist_signals/testquery/models/query_cached_data.model.dart';
+import 'package:persist_signals/testquery/models/query_error.model.dart';
+import 'package:persist_signals/testquery/models/query_key.model.dart';
+import 'package:persist_signals/testquery/models/query_options.model.dart';
 import 'package:signals/signals_flutter.dart';
-import 'types/query_types.dart';
+import 'enums/query_status.enum.dart';
 import 'query_client.dart';
-
-/// Helper class to hold cached data with its timestamp
-class _CachedData<T> {
-  final T data;
-  final DateTime time;
-
-  _CachedData(this.data, this.time);
-}
 
 /// A reactive query that handles data fetching, caching, and state management
 /// Similar to React Query's useQuery but with Flutter signals for reactivity
@@ -48,6 +44,7 @@ class Query<TData extends Object?, TQueryFnData extends Object?> {
   Future<TData?>? _currentFetch;
   bool _isFetching = false; // Track any fetch operation
   Timer? _timeoutTimer;
+  Timer? _refetchIntervalTimer;
 
   Query({
     required this.queryKey,
@@ -66,6 +63,9 @@ class Query<TData extends Object?, TQueryFnData extends Object?> {
     _isLoadingSignal = computed(() => _status.value == QueryStatus.loading);
     _isSuccessSignal = computed(() => _status.value == QueryStatus.success);
     _isErrorSignal = computed(() => _status.value == QueryStatus.error);
+
+    // Set up signal watching - automatically refetch when watched signals change
+    _setupSignalWatching();
 
     // Auto-fetch if enabled (like React Query's default behavior)
     if (options.enabled) {
@@ -158,25 +158,50 @@ class Query<TData extends Object?, TQueryFnData extends Object?> {
         await refetch();
       }
     } catch (e) {
+      print('Error initializing query: $e');
       _completeHydration();
     }
   }
 
+  /// Set up signal watching - subscribes to signals and invalidates query when they change
+  void _setupSignalWatching() {
+    final watchSignals = options.watchSignals;
+    if (watchSignals == null || watchSignals.isEmpty) return;
+
+    // Create an effect that watches all signals and invalidates query when any change
+    effect(() {
+      // Read all watched signals to create dependencies
+      for (final signal in watchSignals) {
+        signal.value; // Reading the value creates the dependency
+      }
+
+      // Skip the first run (initialization)
+      if (_status.value == QueryStatus.idle) return;
+
+      // Invalidate and refetch when any watched signal changes
+      print('Signal dependency changed, invalidating query: ${queryKey.key}');
+      invalidate();
+
+      // Auto-refetch if query is enabled
+      if (options.enabled) {
+        sync();
+      }
+    });
+  }
+
   /// Load and transform cached data if available
-  Future<_CachedData<TData>?> _loadCachedData() async {
+  Future<QueryCachedData<TData>?> _loadCachedData() async {
     final rawCachedData = await _client.getCachedData<dynamic>(
       queryKey,
       granularUpdates: options.granularUpdates,
     );
     final cachedTime = await _client.getCachedTime(queryKey);
 
-    print('cachedTime: $cachedTime');
-
     if (rawCachedData == null || cachedTime == null) return null;
 
     try {
       final transformedData = _transformCachedData(rawCachedData);
-      return _CachedData(transformedData, cachedTime);
+      return QueryCachedData(transformedData, cachedTime);
     } catch (e) {
       print('Failed to transform cached data: $e');
       return null;
@@ -213,7 +238,7 @@ class Query<TData extends Object?, TQueryFnData extends Object?> {
   }
 
   /// Handle cached data - decide whether to use it, fetch fresh, or background refresh
-  Future<void> _handleCachedData(_CachedData<TData> cachedData) async {
+  Future<void> _handleCachedData(QueryCachedData<TData> cachedData) async {
     // Show cached data immediately
     _data.value = cachedData.data;
     _lastFetched.value = cachedData.time;
@@ -222,6 +247,9 @@ class Query<TData extends Object?, TQueryFnData extends Object?> {
     // Clear manual invalidation since we just loaded data
     _isStale.value = false;
     _completeHydration();
+
+    // Start refetch interval for cached data
+    _startRefetchInterval();
 
     print('handleCachedData: isStale=${isStale}');
 
@@ -322,6 +350,9 @@ class Query<TData extends Object?, TQueryFnData extends Object?> {
       );
       await _client.setCachedTime(queryKey, DateTime.now());
 
+      // Start refetch interval after successful fetch
+      _startRefetchInterval();
+
       return transformedResult;
     } catch (e, stackTrace) {
       // Handle errors gracefully with better error categorization
@@ -366,6 +397,10 @@ class Query<TData extends Object?, TQueryFnData extends Object?> {
 
       _error.value = queryError;
       _isStale.value = true;
+
+      // Stop refetch interval on error
+      _stopRefetchInterval();
+
       return null;
     }
   }
@@ -416,6 +451,11 @@ class Query<TData extends Object?, TQueryFnData extends Object?> {
         granularUpdates: options.granularUpdates,
       );
       await _client.setCachedTime(queryKey, DateTime.now());
+
+      // Restart refetch interval after successful background fetch (for dynamic intervals)
+      if (options.refetchIntervalFn != null) {
+        _startRefetchInterval();
+      }
     } catch (e) {
       // Silent fail for background refresh - just mark as stale
       _isStale.value = true;
@@ -488,11 +528,64 @@ class Query<TData extends Object?, TQueryFnData extends Object?> {
     _client.setCachedTime(queryKey, DateTime.now());
   }
 
+  // ==================== REFETCH INTERVAL ====================
+
+  /// Start automatic refetch interval based on options
+  void _startRefetchInterval() {
+    // Stop any existing timer first
+    _stopRefetchInterval();
+
+    // Don't start if query is disabled
+    if (!options.enabled) return;
+
+    // Calculate interval duration
+    Duration? interval;
+
+    if (options.refetchIntervalFn != null) {
+      // Dynamic interval based on current state
+      interval = options.refetchIntervalFn!(_data.value, _error.value);
+    } else {
+      // Fixed interval
+      interval = options.refetchInterval;
+    }
+
+    // No interval configured
+    if (interval == null) return;
+
+    print(
+        'Starting refetch interval: ${interval.inSeconds}s for query: ${queryKey.key}');
+
+    _refetchIntervalTimer = Timer.periodic(interval, (timer) {
+      // Only refetch if query is still enabled
+      if (!options.enabled) {
+        _stopRefetchInterval();
+        return;
+      }
+
+      print('Refetch interval triggered for query: ${queryKey.key}');
+
+      // Background refetch (no loading state)
+      _fetchInBackground();
+
+      // If using dynamic interval, restart with new interval
+      if (options.refetchIntervalFn != null) {
+        _startRefetchInterval();
+      }
+    });
+  }
+
+  /// Stop automatic refetch interval
+  void _stopRefetchInterval() {
+    _refetchIntervalTimer?.cancel();
+    _refetchIntervalTimer = null;
+  }
+
   /// Clean up query when no longer needed
   /// Disposes all signals to prevent memory leaks
   void dispose() {
     // Cancel any pending operations
     _timeoutTimer?.cancel();
+    _stopRefetchInterval();
     _currentFetch = null;
 
     // Dispose all signals

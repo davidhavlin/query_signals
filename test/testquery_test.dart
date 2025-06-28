@@ -2,10 +2,15 @@
 // Tests help us catch bugs early and ensure our code behaves as expected
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:persist_signals/testquery/models/query_client_config.model.dart';
+import 'package:persist_signals/testquery/models/query_error.model.dart';
+import 'package:persist_signals/testquery/models/query_key.model.dart';
+import 'package:persist_signals/testquery/models/query_mutation_options.model.dart';
+import 'package:persist_signals/testquery/models/query_options.model.dart';
 import 'package:persist_signals/testquery/query_client.dart';
 import 'package:persist_signals/persist_signals.dart';
 import 'package:persist_signals/storage/base_persisted_storage.abstract.dart';
-import 'package:persist_signals/testquery/types/query_types.dart';
+import 'package:persist_signals/testquery/enums/query_status.enum.dart';
 
 // Simple in-memory storage for testing
 class MockStorage implements BasePersistedStorage {
@@ -49,7 +54,8 @@ class MockStorage implements BasePersistedStorage {
   Future<void> setRecords(
     String key,
     List<Map<String, dynamic>> records,
-  ) async => _records[key] = records;
+  ) async =>
+      _records[key] = records;
 
   @override
   Future<void> setRecord(
@@ -95,10 +101,10 @@ class TestPost {
 
   // Convert from JSON (like from an API)
   factory TestPost.fromJson(Map<String, dynamic> json) => TestPost(
-    id: json['id'] as int,
-    title: json['title'] as String,
-    body: json['body'] as String,
-  );
+        id: json['id'] as int,
+        title: json['title'] as String,
+        body: json['body'] as String,
+      );
 
   // Convert to JSON (for storage)
   Map<String, dynamic> toJson() => {'id': id, 'title': title, 'body': body};
@@ -191,8 +197,7 @@ void main() {
         ['test-posts'], // Query key (unique identifier)
         mockFetchPosts, // Function to fetch data
         options: QueryOptions(
-          transformer:
-              (jsonList) => // Transform JSON to objects
+          transformer: (jsonList) => // Transform JSON to objects
               (jsonList as List)
                   .map((json) => TestPost.fromJson(json))
                   .toList(),

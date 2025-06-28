@@ -1,8 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:persist_signals/testquery/models/infinite_query_options.model.dart';
 import 'package:persist_signals/testquery/query_client.dart';
 import 'package:persist_signals/persist_signals.dart';
 import 'package:persist_signals/storage/base_persisted_storage.abstract.dart';
-import 'package:persist_signals/testquery/types/query_types.dart';
+import 'package:persist_signals/testquery/enums/query_status.enum.dart';
 
 /// Simple in-memory storage for testing
 class TestStorage extends BasePersistedStorage {
@@ -96,10 +97,10 @@ class MockPage {
   }
 
   Map<String, dynamic> toJson() => {
-    'items': items,
-    'hasMore': hasMore,
-    'page': page,
-  };
+        'items': items,
+        'hasMore': hasMore,
+        'page': page,
+      };
 }
 
 void main() {
@@ -118,24 +119,24 @@ void main() {
     });
 
     test('should fetch first page on initialization', () async {
-      final infiniteQuery = client
-          .useInfiniteQuery<MockPage, Map<String, dynamic>, int>(
-            ['test-infinite'],
-            (pageParam) async {
-              await Future.delayed(Duration(milliseconds: 10));
-              return {
-                'items': ['item${pageParam}_1', 'item${pageParam}_2'],
-                'hasMore': pageParam < 2,
-                'page': pageParam,
-              };
-            },
-            options: InfiniteQueryOptions(
-              transformer: (json) => MockPage.fromJson(json),
-              getNextPageParam: (lastPage, allPages) =>
-                  lastPage.hasMore ? lastPage.page + 1 : null,
-              initialPageParam: 0,
-            ),
-          );
+      final infiniteQuery =
+          client.useInfiniteQuery<MockPage, Map<String, dynamic>, int>(
+        ['test-infinite'],
+        (pageParam) async {
+          await Future.delayed(Duration(milliseconds: 10));
+          return {
+            'items': ['item${pageParam}_1', 'item${pageParam}_2'],
+            'hasMore': pageParam < 2,
+            'page': pageParam,
+          };
+        },
+        options: InfiniteQueryOptions(
+          transformer: (json) => MockPage.fromJson(json),
+          getNextPageParam: (lastPage, allPages) =>
+              lastPage.hasMore ? lastPage.page + 1 : null,
+          initialPageParam: 0,
+        ),
+      );
 
       // Wait for initial fetch to complete
       await infiniteQuery.waitForHydration();
@@ -148,24 +149,24 @@ void main() {
     });
 
     test('should fetch next page correctly', () async {
-      final infiniteQuery = client
-          .useInfiniteQuery<MockPage, Map<String, dynamic>, int>(
-            ['test-infinite-next'],
-            (pageParam) async {
-              await Future.delayed(Duration(milliseconds: 10));
-              return {
-                'items': ['item${pageParam}_1', 'item${pageParam}_2'],
-                'hasMore': pageParam < 2,
-                'page': pageParam,
-              };
-            },
-            options: InfiniteQueryOptions(
-              transformer: (json) => MockPage.fromJson(json),
-              getNextPageParam: (lastPage, allPages) =>
-                  lastPage.hasMore ? lastPage.page + 1 : null,
-              initialPageParam: 0,
-            ),
-          );
+      final infiniteQuery =
+          client.useInfiniteQuery<MockPage, Map<String, dynamic>, int>(
+        ['test-infinite-next'],
+        (pageParam) async {
+          await Future.delayed(Duration(milliseconds: 10));
+          return {
+            'items': ['item${pageParam}_1', 'item${pageParam}_2'],
+            'hasMore': pageParam < 2,
+            'page': pageParam,
+          };
+        },
+        options: InfiniteQueryOptions(
+          transformer: (json) => MockPage.fromJson(json),
+          getNextPageParam: (lastPage, allPages) =>
+              lastPage.hasMore ? lastPage.page + 1 : null,
+          initialPageParam: 0,
+        ),
+      );
 
       // Wait for initial fetch
       await infiniteQuery.waitForHydration();
@@ -184,24 +185,24 @@ void main() {
     });
 
     test('should detect when no more pages available', () async {
-      final infiniteQuery = client
-          .useInfiniteQuery<MockPage, Map<String, dynamic>, int>(
-            ['test-infinite-end'],
-            (pageParam) async {
-              await Future.delayed(Duration(milliseconds: 10));
-              return {
-                'items': ['item${pageParam}_1', 'item${pageParam}_2'],
-                'hasMore': pageParam < 1, // Only 2 pages total
-                'page': pageParam,
-              };
-            },
-            options: InfiniteQueryOptions(
-              transformer: (json) => MockPage.fromJson(json),
-              getNextPageParam: (lastPage, allPages) =>
-                  lastPage.hasMore ? lastPage.page + 1 : null,
-              initialPageParam: 0,
-            ),
-          );
+      final infiniteQuery =
+          client.useInfiniteQuery<MockPage, Map<String, dynamic>, int>(
+        ['test-infinite-end'],
+        (pageParam) async {
+          await Future.delayed(Duration(milliseconds: 10));
+          return {
+            'items': ['item${pageParam}_1', 'item${pageParam}_2'],
+            'hasMore': pageParam < 1, // Only 2 pages total
+            'page': pageParam,
+          };
+        },
+        options: InfiniteQueryOptions(
+          transformer: (json) => MockPage.fromJson(json),
+          getNextPageParam: (lastPage, allPages) =>
+              lastPage.hasMore ? lastPage.page + 1 : null,
+          initialPageParam: 0,
+        ),
+      );
 
       // Wait for initial fetch
       await infiniteQuery.waitForHydration();
@@ -222,28 +223,28 @@ void main() {
     });
 
     test('should handle flatMap correctly', () async {
-      final infiniteQuery = client
-          .useInfiniteQuery<MockPage, Map<String, dynamic>, int>(
-            ['test-infinite-flatmap'],
-            (pageParam) async {
-              await Future.delayed(Duration(milliseconds: 10));
-              return {
-                'items': [
-                  'item${pageParam}_1',
-                  'item${pageParam}_2',
-                  'item${pageParam}_3',
-                ],
-                'hasMore': pageParam < 1,
-                'page': pageParam,
-              };
-            },
-            options: InfiniteQueryOptions(
-              transformer: (json) => MockPage.fromJson(json),
-              getNextPageParam: (lastPage, allPages) =>
-                  lastPage.hasMore ? lastPage.page + 1 : null,
-              initialPageParam: 0,
-            ),
-          );
+      final infiniteQuery =
+          client.useInfiniteQuery<MockPage, Map<String, dynamic>, int>(
+        ['test-infinite-flatmap'],
+        (pageParam) async {
+          await Future.delayed(Duration(milliseconds: 10));
+          return {
+            'items': [
+              'item${pageParam}_1',
+              'item${pageParam}_2',
+              'item${pageParam}_3',
+            ],
+            'hasMore': pageParam < 1,
+            'page': pageParam,
+          };
+        },
+        options: InfiniteQueryOptions(
+          transformer: (json) => MockPage.fromJson(json),
+          getNextPageParam: (lastPage, allPages) =>
+              lastPage.hasMore ? lastPage.page + 1 : null,
+          initialPageParam: 0,
+        ),
+      );
 
       // Wait for initial fetch
       await infiniteQuery.waitForHydration();
@@ -270,24 +271,24 @@ void main() {
     test('should handle refetch correctly', () async {
       int callCount = 0;
 
-      final infiniteQuery = client
-          .useInfiniteQuery<MockPage, Map<String, dynamic>, int>(
-            ['test-infinite-refetch'],
-            (pageParam) async {
-              callCount++;
-              await Future.delayed(Duration(milliseconds: 10));
-              return {
-                'items': ['item${pageParam}_${callCount}'],
-                'hasMore': false,
-                'page': pageParam,
-              };
-            },
-            options: InfiniteQueryOptions(
-              transformer: (json) => MockPage.fromJson(json),
-              getNextPageParam: (lastPage, allPages) => null,
-              initialPageParam: 0,
-            ),
-          );
+      final infiniteQuery =
+          client.useInfiniteQuery<MockPage, Map<String, dynamic>, int>(
+        ['test-infinite-refetch'],
+        (pageParam) async {
+          callCount++;
+          await Future.delayed(Duration(milliseconds: 10));
+          return {
+            'items': ['item${pageParam}_${callCount}'],
+            'hasMore': false,
+            'page': pageParam,
+          };
+        },
+        options: InfiniteQueryOptions(
+          transformer: (json) => MockPage.fromJson(json),
+          getNextPageParam: (lastPage, allPages) => null,
+          initialPageParam: 0,
+        ),
+      );
 
       // Wait for initial fetch
       await infiniteQuery.waitForHydration();
@@ -306,25 +307,25 @@ void main() {
     });
 
     test('should handle errors correctly', () async {
-      final infiniteQuery = client
-          .useInfiniteQuery<MockPage, Map<String, dynamic>, int>(
-            ['test-infinite-error'],
-            (pageParam) async {
-              if (pageParam == 1) {
-                throw Exception('Simulated error for page 1');
-              }
-              return {
-                'items': ['item${pageParam}_1'],
-                'hasMore': true,
-                'page': pageParam,
-              };
-            },
-            options: InfiniteQueryOptions(
-              transformer: (json) => MockPage.fromJson(json),
-              getNextPageParam: (lastPage, allPages) => lastPage.page + 1,
-              initialPageParam: 0,
-            ),
-          );
+      final infiniteQuery =
+          client.useInfiniteQuery<MockPage, Map<String, dynamic>, int>(
+        ['test-infinite-error'],
+        (pageParam) async {
+          if (pageParam == 1) {
+            throw Exception('Simulated error for page 1');
+          }
+          return {
+            'items': ['item${pageParam}_1'],
+            'hasMore': true,
+            'page': pageParam,
+          };
+        },
+        options: InfiniteQueryOptions(
+          transformer: (json) => MockPage.fromJson(json),
+          getNextPageParam: (lastPage, allPages) => lastPage.page + 1,
+          initialPageParam: 0,
+        ),
+      );
 
       // Wait for initial fetch (should succeed)
       await infiniteQuery.waitForHydration();
@@ -347,24 +348,24 @@ void main() {
     });
 
     test('should track isFetchingNextPage state correctly', () async {
-      final infiniteQuery = client
-          .useInfiniteQuery<MockPage, Map<String, dynamic>, int>(
-            ['test-infinite-loading'],
-            (pageParam) async {
-              await Future.delayed(Duration(milliseconds: 50)); // Longer delay
-              return {
-                'items': ['item${pageParam}_1'],
-                'hasMore': pageParam < 1,
-                'page': pageParam,
-              };
-            },
-            options: InfiniteQueryOptions(
-              transformer: (json) => MockPage.fromJson(json),
-              getNextPageParam: (lastPage, allPages) =>
-                  lastPage.hasMore ? lastPage.page + 1 : null,
-              initialPageParam: 0,
-            ),
-          );
+      final infiniteQuery =
+          client.useInfiniteQuery<MockPage, Map<String, dynamic>, int>(
+        ['test-infinite-loading'],
+        (pageParam) async {
+          await Future.delayed(Duration(milliseconds: 50)); // Longer delay
+          return {
+            'items': ['item${pageParam}_1'],
+            'hasMore': pageParam < 1,
+            'page': pageParam,
+          };
+        },
+        options: InfiniteQueryOptions(
+          transformer: (json) => MockPage.fromJson(json),
+          getNextPageParam: (lastPage, allPages) =>
+              lastPage.hasMore ? lastPage.page + 1 : null,
+          initialPageParam: 0,
+        ),
+      );
 
       // Wait for initial fetch
       await infiniteQuery.waitForHydration();
@@ -388,25 +389,25 @@ void main() {
     test('should prevent duplicate fetchNextPage calls', () async {
       int callCount = 0;
 
-      final infiniteQuery = client
-          .useInfiniteQuery<MockPage, Map<String, dynamic>, int>(
-            ['test-infinite-dedup'],
-            (pageParam) async {
-              callCount++;
-              await Future.delayed(Duration(milliseconds: 30));
-              return {
-                'items': ['item${pageParam}_${callCount}'],
-                'hasMore': pageParam < 2,
-                'page': pageParam,
-              };
-            },
-            options: InfiniteQueryOptions(
-              transformer: (json) => MockPage.fromJson(json),
-              getNextPageParam: (lastPage, allPages) =>
-                  lastPage.hasMore ? lastPage.page + 1 : null,
-              initialPageParam: 0,
-            ),
-          );
+      final infiniteQuery =
+          client.useInfiniteQuery<MockPage, Map<String, dynamic>, int>(
+        ['test-infinite-dedup'],
+        (pageParam) async {
+          callCount++;
+          await Future.delayed(Duration(milliseconds: 30));
+          return {
+            'items': ['item${pageParam}_${callCount}'],
+            'hasMore': pageParam < 2,
+            'page': pageParam,
+          };
+        },
+        options: InfiniteQueryOptions(
+          transformer: (json) => MockPage.fromJson(json),
+          getNextPageParam: (lastPage, allPages) =>
+              lastPage.hasMore ? lastPage.page + 1 : null,
+          initialPageParam: 0,
+        ),
+      );
 
       // Wait for initial fetch
       await infiniteQuery.waitForHydration();
@@ -430,24 +431,24 @@ void main() {
     });
 
     test('should support QueryClient infinite query methods', () async {
-      final infiniteQuery = client
-          .useInfiniteQuery<MockPage, Map<String, dynamic>, int>(
-            ['test-client-methods'],
-            (pageParam) async {
-              await Future.delayed(Duration(milliseconds: 10));
-              return {
-                'items': ['item${pageParam}_1', 'item${pageParam}_2'],
-                'hasMore': pageParam < 1,
-                'page': pageParam,
-              };
-            },
-            options: InfiniteQueryOptions(
-              transformer: (json) => MockPage.fromJson(json),
-              getNextPageParam: (lastPage, allPages) =>
-                  lastPage.hasMore ? lastPage.page + 1 : null,
-              initialPageParam: 0,
-            ),
-          );
+      final infiniteQuery =
+          client.useInfiniteQuery<MockPage, Map<String, dynamic>, int>(
+        ['test-client-methods'],
+        (pageParam) async {
+          await Future.delayed(Duration(milliseconds: 10));
+          return {
+            'items': ['item${pageParam}_1', 'item${pageParam}_2'],
+            'hasMore': pageParam < 1,
+            'page': pageParam,
+          };
+        },
+        options: InfiniteQueryOptions(
+          transformer: (json) => MockPage.fromJson(json),
+          getNextPageParam: (lastPage, allPages) =>
+              lastPage.hasMore ? lastPage.page + 1 : null,
+          initialPageParam: 0,
+        ),
+      );
 
       // Wait for initial fetch
       await infiniteQuery.waitForHydration();

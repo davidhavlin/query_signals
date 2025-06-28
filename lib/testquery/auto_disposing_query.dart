@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:persist_signals/testquery/models/query_options.model.dart';
 import 'package:signals/signals_flutter.dart';
 import 'query.dart';
 import 'query_client.dart';
-import 'types/query_types.dart';
 
 /// Widget that automatically creates and disposes a query
 /// Perfect for one-off queries that are only used in specific widgets

@@ -33,12 +33,58 @@ class _PostDetailRouteState extends State<PostDetailRoute> {
       );
     },
   );
+  late final updateMutation = postsStore.updatePostMutation(
+    onSuccess: (updatedPost) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Post updated successfully!')));
+    },
+    onError: (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update: ${error.message}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    },
+  );
 
   void _handleEdit() {
-    // TODO: Navigate to edit screen
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Edit functionality coming soon!')));
+    final post = postDetail.data;
+    if (post == null) return;
+
+    // Show confirmation dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Edit Post'),
+        content: Text(
+          'This will update the post title by adding "(Updated)" to it.\n\nCurrent title: "${post.title}"',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              // Update the post title with "(Updated)" appended
+              final updatedTitle = post.title.endsWith(' (Updated)')
+                  ? post.title
+                  : '${post.title} (Updated)';
+
+              updateMutation.mutate({
+                'postId': widget.postId,
+                'title': updatedTitle,
+              });
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.blue),
+            child: Text('Update'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _handleDelete() {
@@ -106,10 +152,21 @@ class _PostDetailRouteState extends State<PostDetailRoute> {
       foregroundColor: Colors.blue.shade800,
       elevation: 0,
       actions: [
-        IconButton(
-          onPressed: _handleEdit,
-          icon: Icon(Icons.edit),
-          tooltip: 'Edit Post',
+        Watch(
+          (context) => IconButton(
+            onPressed: updateMutation.isLoading ? null : _handleEdit,
+            icon: updateMutation.isLoading
+                ? SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.blue.shade800,
+                    ),
+                  )
+                : Icon(Icons.edit),
+            tooltip: 'Edit Post',
+          ),
         ),
         IconButton(
           onPressed: _handleDelete,

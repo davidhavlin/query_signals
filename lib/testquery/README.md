@@ -334,11 +334,15 @@ This implementation provides 95% of React Query's functionality:
 - Prefetching
 - Loading/error states
 - Persistent cache
+- Infinite queries (pagination)
+- Transformers for clean data transformation
+- Auto-disposal with mixins
+- Hydration to eliminate loading flicker
 
 🚧 **Not implemented yet:**
-- Infinite queries (pagination)
-- Dependent queries
-- Retry logic
-- Network status detection
+- Dependent queries (queries that depend on other query results)
+- Retry logic (automatic retry on failure)
+- Network status detection (pause queries when offline)
+- Request deduplication (prevent duplicate simultaneous requests)
 
 Want these features? They can be added following the same patterns! 
