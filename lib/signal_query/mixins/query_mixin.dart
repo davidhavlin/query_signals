@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:persist_signals/testquery/models/infinite_query_options.model.dart';
-import 'package:persist_signals/testquery/models/query_mutation_options.model.dart';
-import 'package:persist_signals/testquery/models/query_options.model.dart';
+import 'package:persist_signals/signal_query/models/infinite_query_options.model.dart';
+import 'package:persist_signals/signal_query/models/query_mutation_options.model.dart';
+import 'package:persist_signals/signal_query/models/query_options.model.dart';
 import '../query.dart';
 import '../mutation.dart';
 import '../infinite_query.dart';
-import '../query_client.dart';
+import '../client/query_client.dart';
 import '../enums/query_status.enum.dart';
 
 /// Mixin that provides automatic query disposal when widget is disposed

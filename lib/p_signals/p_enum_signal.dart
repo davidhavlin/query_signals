@@ -1,9 +1,9 @@
-import 'package:persist_signals/signals/persisted_signal.dart';
+import 'package:persist_signals/p_signals/p_signal.dart';
 
-class PersistedEnumSignal<T extends Enum?> extends PersistedSignal<T> {
+class PEnumSignal<T extends Enum?> extends PSignal<T> {
   final List<T> values;
 
-  PersistedEnumSignal({
+  PEnumSignal({
     required super.value,
     super.clearCache,
     required super.key,

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 /// Unique identifier for queries - used for caching and invalidation
 /// Example: QueryKey(['posts']) or QueryKey(['posts', userId])
 class QueryKey {
@@ -21,5 +23,13 @@ class QueryKey {
   int get hashCode => _cachedHash ??= Object.hashAll(key);
 
   @override
-  String toString() => key.join('_');
+  String toString() {
+    return key.map((item) {
+      if (item is Map || item is List) {
+        // Serialize complex objects to JSON for consistent string representation
+        return jsonEncode(item);
+      }
+      return item.toString();
+    }).join('_');
+  }
 }

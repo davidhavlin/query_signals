@@ -1,7 +1,9 @@
+import 'package:example/shared/service/storage.service.dart';
+import 'package:example/shared/stores/testquery.store.dart';
 import 'package:flutter/material.dart';
 import 'package:signals/signals_flutter.dart';
-import 'package:persist_signals/testquery/query_client.dart';
-import '../stores/testquery.store.dart';
+import 'package:persist_signals/signal_query/query_client.dart';
+import '../stores/app.store.dart';
 
 // ==================== HYDRATION EXAMPLE ====================
 
@@ -13,10 +15,10 @@ void main() async {
 
   // Step 1: Initialize your storage system
   // (Replace with your actual persist_signals setup)
-  // PersistSignals.init(YourStorageProvider());
+  final storage = await StorageService().init();
 
   // Step 2: Initialize QueryClient
-  await QueryClient().init();
+  await QueryClient().init(storage: storage);
 
   // Step 3: Create your stores BEFORE runApp
   // This triggers query creation and starts loading cached data

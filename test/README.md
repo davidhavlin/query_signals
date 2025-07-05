@@ -1,4 +1,4 @@
-# TestQuery Tests - Beginner's Guide
+# signal_query Tests - Beginner's Guide
 
 This guide explains how to understand and work with the test files for our custom query system.
 
@@ -8,7 +8,7 @@ Tests are **automatic checks** that make sure our code works correctly. Think of
 
 ## 📁 Test Files
 
-- `testquery_test.dart` - Contains all tests for our query system
+- `signal_query_test.dart` - Contains all tests for our query system
 
 ## 🏃‍♂️ Running Tests
 
@@ -17,7 +17,7 @@ Tests are **automatic checks** that make sure our code works correctly. Think of
 flutter test
 
 # Run just the query tests
-flutter test test/testquery_test.dart
+flutter test test/signal_query_test.dart
 
 # Run a specific test
 flutter test --plain-name "should create and execute a basic query"
@@ -160,7 +160,7 @@ Example failure:
 Expected: not null
 Actual: <null>
 Should retrieve set data
-test/testquery_test.dart:458:7
+test/signal_query_test.dart:458:7
 ```
 
 This means:

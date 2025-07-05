@@ -1,15 +1,15 @@
 import 'dart:convert';
 
-import 'package:persist_signals/persist_signals.dart';
-import 'package:persist_signals/signals/mixins/p_signal.mixin.dart';
+import 'package:persist_signals/p_signals/client/p_signals_client.dart';
+import 'package:persist_signals/p_signals/mixins/p_signal.mixin.dart';
 import 'package:persist_signals/storage/base_persisted_storage.abstract.dart';
 import 'package:signals/signals_flutter.dart';
 
-class PersistedSignal<T> extends FlutterSignal<T> with PSignalMixin<T> {
+class PSignal<T> extends FlutterSignal<T> with PSignalMixin<T> {
   final T Function(Map<String, dynamic>)? fromJson;
   final Map<String, dynamic> Function(T)? valueToJson;
 
-  PersistedSignal({
+  PSignal({
     required T value,
     super.autoDispose,
     super.debugLabel,
@@ -17,7 +17,7 @@ class PersistedSignal<T> extends FlutterSignal<T> with PSignalMixin<T> {
     required this.key,
     this.fromJson,
     this.valueToJson,
-  })  : store = PersistSignals.I.storage,
+  })  : store = PSignalsClient.I.storage,
         super(value) {
     init().ignore();
   }

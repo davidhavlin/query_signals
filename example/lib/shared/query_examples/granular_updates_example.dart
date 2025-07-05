@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:persist_signals/storage/storable.types.dart';
-import 'package:persist_signals/testquery/models/query_mutation_options.model.dart';
-import 'package:persist_signals/testquery/models/query_options.model.dart';
+import 'package:persist_signals/signal_query/models/query_mutation_options.model.dart';
+import 'package:persist_signals/signal_query/models/query_options.model.dart';
 import 'package:signals/signals_flutter.dart';
-import 'package:persist_signals/testquery/query_client.dart';
+import 'package:persist_signals/signal_query/query_client.dart';
 
 // ==================== MODEL WITH HasId ====================
 

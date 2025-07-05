@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:persist_signals/persist_signals.dart';
+import 'package:persist_signals/p_signals/client/p_signals_client.dart';
 import 'package:persist_signals/storage/base_persisted_storage.abstract.dart';
 import 'package:persist_signals/storage/storable.types.dart';
 import 'package:signals/signals_flutter.dart';
@@ -10,7 +10,7 @@ import 'package:signals/signals_flutter.dart';
 /// Perfect for large lists where you don't want to save everything on each change
 ///
 /// Requirements: T must have an 'id' property and toJson()/fromJson() methods
-class PersistedComplexListSignal<T extends HasId> extends ListSignal<T> {
+class PComplexListSignal<T extends HasId> extends ListSignal<T> {
   final String key;
   final T Function(Map<String, dynamic>) fromJson;
   final BasePersistedStorage store;
@@ -18,11 +18,11 @@ class PersistedComplexListSignal<T extends HasId> extends ListSignal<T> {
   bool isHydrated = false;
   final Completer<void> _hydrationCompleter = Completer<void>();
 
-  PersistedComplexListSignal({
+  PComplexListSignal({
     required this.key,
     required this.fromJson,
     List<T> initialValue = const [],
-  })  : store = PersistSignals.I.storage,
+  })  : store = PSignalsClient.I.storage,
         super(List.from(initialValue)) {
     _loadData();
   }

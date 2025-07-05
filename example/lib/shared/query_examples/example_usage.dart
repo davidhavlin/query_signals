@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:signals/signals_flutter.dart';
 import '../stores/testquery.store.dart';
-import 'package:persist_signals/testquery/query_client.dart';
 
 class PostsExample extends StatefulWidget {
   const PostsExample({super.key});
@@ -12,13 +11,6 @@ class PostsExample extends StatefulWidget {
 
 class _PostsExampleState extends State<PostsExample> {
   final store = TestQueryStore();
-
-  @override
-  void initState() {
-    super.initState();
-    // Initialize QueryClient
-    QueryClient().init();
-  }
 
   @override
   Widget build(BuildContext context) {

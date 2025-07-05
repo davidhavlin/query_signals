@@ -1,16 +1,15 @@
-import 'package:persist_signals/persist_signals.dart';
-import 'package:persist_signals/signals/mixins/p_map_signal.mixin.dart';
+import 'package:persist_signals/p_signals/client/p_signals_client.dart';
+import 'package:persist_signals/p_signals/mixins/p_map_signal.mixin.dart';
 import 'package:persist_signals/storage/base_persisted_storage.abstract.dart';
 import 'package:signals/signals_flutter.dart';
 
 /// A persisted map signal that can store any key-value pairs
-class PersistedMapSignal<K, V> extends MapSignal<K, V>
-    with PMapSignalMixin<K, V> {
-  PersistedMapSignal({
+class PMapSignal<K, V> extends MapSignal<K, V> with PMapSignalMixin<K, V> {
+  PMapSignal({
     required this.key,
     required Map<K, V> value,
     this.clearCache = false,
-  })  : store = PersistSignals.I.storage,
+  })  : store = PSignalsClient.I.storage,
         super(value) {
     init().ignore();
   }
@@ -29,7 +28,7 @@ class PersistedMapSignal<K, V> extends MapSignal<K, V>
 /// 
 /// Usage:
 /// ```dart
-/// final companiesSignal = PersistedMapSignal<String, Map<String, dynamic>>(
+/// final companiesSignal = PMapSignal<String, Map<String, dynamic>>(
 ///   key: 'companies',
 ///   value: {},
 /// );

@@ -1,12 +1,10 @@
 import 'dart:async';
 
 import 'package:example/shared/enums/some.enum.dart';
+import 'package:persist_signals/p_signals/p_enum_signal.dart';
+import 'package:persist_signals/p_signals/p_map_signal.dart';
+import 'package:persist_signals/p_signals/p_signal.dart';
 import 'package:persist_signals/testgeneration/annotations/hydrated.dart';
-import 'package:persist_signals/signals/persisted_enum_signal.dart';
-import 'package:persist_signals/signals/persisted_map_signal.dart';
-import 'package:persist_signals/signals/persisted_signal.dart';
-import 'package:signals/signals_flutter.dart';
-import 'package:persist_signals/persist_signals.dart';
 
 part 'app.store.g.dart';
 
@@ -27,11 +25,11 @@ class AppStore {
   final test1 = CustomSignal('test1');
   final test2 = CustomSignal('test2');
 
-  final test3 = PersistedSignal(key: 'test3', value: '');
-  final test4 = PersistedSignal(key: 'test4', value: 0);
-  final test41 = PersistedSignal<int?>(key: 'test4', value: null);
-  final test5 = PersistedSignal(key: 'test5', value: false);
-  // final test81 = PersistedSignal(
+  final test3 = PSignal(key: 'test3', value: '');
+  final test4 = PSignal(key: 'test4', value: 0);
+  final test41 = PSignal<int?>(key: 'test4', value: null);
+  final test5 = PSignal(key: 'test5', value: false);
+  // final test81 = PSignal(
   //   key: 'test81',
   //   fromJson: Company.fromJson,
   //   value: Company(
@@ -40,30 +38,30 @@ class AppStore {
   //     bs: 'Some bs',
   //   ),
   // );
-  // final test82 = PersistedSignal(
+  // final test82 = PSignal(
   //   key: 'test82',
   //   fromJson: Company.fromJson,
   //   value: null,
   // );
 
-  final test9 = PersistedEnumSignal(
+  final test9 = PEnumSignal(
     key: 'test9',
     value: SomeEnum.one,
     values: SomeEnum.values,
   );
-  final test10 = PersistedEnumSignal(
+  final test10 = PEnumSignal(
     key: 'test9',
     value: null,
     values: SomeEnum.values,
   );
-  final test8 = PersistedMapSignal(
+  final test8 = PMapSignal(
     key: 'test8',
     value: {'field1': 'value1', 'field2': 'value2'},
   );
 
-  // final test6 = PersistedSignal<List<String>>([]);
-  // final test7 = PersistedSignal<Map<String, dynamic>>({});
-  // final test10 = PersistedSignal<User?>(null);
+  // final test6 = PSignal<List<String>>([]);
+  // final test7 = PSignal<Map<String, dynamic>>({});
+  // final test10 = PSignal<User?>(null);
 
   final someComplexList = <Map<String, dynamic>>[];
 }

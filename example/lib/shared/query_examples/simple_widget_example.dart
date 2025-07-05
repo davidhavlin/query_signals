@@ -1,7 +1,7 @@
-import 'package:persist_signals/testquery/mixins/query_mixin.dart';
-import 'package:persist_signals/testquery/models/query_mutation_options.model.dart';
-import 'package:persist_signals/testquery/models/query_options.model.dart';
-import '../stores/testquery.store.dart';
+import 'package:example/shared/stores/testquery.store.dart';
+import 'package:persist_signals/signal_query/mixins/query_mixin.dart';
+import 'package:persist_signals/signal_query/models/query_mutation_options.model.dart';
+import 'package:persist_signals/signal_query/models/query_options.model.dart';
 import 'package:flutter/material.dart';
 import 'package:signals/signals_flutter.dart';
 

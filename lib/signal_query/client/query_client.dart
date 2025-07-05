@@ -1,17 +1,16 @@
 import 'dart:convert';
-import 'package:persist_signals/persist_signals.dart';
+import 'package:persist_signals/p_signals/client/p_signals_client.dart';
 import 'package:persist_signals/storage/base_persisted_storage.abstract.dart';
 import 'package:persist_signals/storage/storable.types.dart';
-import 'package:persist_signals/testquery/models/infinite_query_data.model.dart';
-import 'package:persist_signals/testquery/models/infinite_query_options.model.dart';
-import 'package:persist_signals/testquery/models/query_client_config.model.dart';
-import 'package:persist_signals/testquery/models/query_key.model.dart';
-import 'package:persist_signals/testquery/models/query_mutation_options.model.dart';
-import 'package:persist_signals/testquery/models/query_options.model.dart';
-import 'enums/query_status.enum.dart';
-import 'query.dart';
-import 'mutation.dart';
-import 'infinite_query.dart';
+import 'package:persist_signals/signal_query/models/infinite_query_data.model.dart';
+import 'package:persist_signals/signal_query/models/infinite_query_options.model.dart';
+import 'package:persist_signals/signal_query/models/query_client_config.model.dart';
+import 'package:persist_signals/signal_query/models/query_key.model.dart';
+import 'package:persist_signals/signal_query/models/query_mutation_options.model.dart';
+import 'package:persist_signals/signal_query/models/query_options.model.dart';
+import '../query.dart';
+import '../mutation.dart';
+import '../infinite_query.dart';
 
 /// Central manager for all queries and mutations - similar to React Query's QueryClient
 /// Handles caching, invalidation, and query lifecycle
@@ -63,16 +62,18 @@ class QueryClient {
   ///   defaultCacheDuration: Duration(hours: 2),
   /// ));
   /// ```
-  /// TODO: pass storage to init
-  Future<void> init([QueryClientConfig? config]) async {
+  Future<void> init({
+    QueryClientConfig? config,
+    required BasePersistedStorage storage,
+  }) async {
     if (_initialized) return;
 
     if (config != null) {
       _config = config;
     }
 
-    _storage = PersistSignals.I.storage;
-    await _storage.init();
+    _storage = storage;
+    PSignalsClient.init(storage);
     _initialized = true;
   }
 
@@ -98,7 +99,7 @@ class QueryClient {
   }) {
     // Ensure client is initialized
     if (!_initialized) {
-      init();
+      throw Exception('QueryClient not initialized');
     }
 
     final queryKey = QueryKey(key);
@@ -167,7 +168,7 @@ class QueryClient {
   }) {
     // Ensure client is initialized
     if (!_initialized) {
-      init();
+      throw Exception('QueryClient not initialized');
     }
 
     final queryKey = QueryKey(key);
@@ -232,6 +233,10 @@ class QueryClient {
     Future<TData> Function(TVariables variables) mutationFn, {
     MutationOptions? options,
   }) {
+    if (!_initialized) {
+      throw Exception('QueryClient not initialized');
+    }
+
     // Generate unique key for this mutation
     final mutationKey =
         'mutation_${_mutationKeyCounter++}_${DateTime.now().millisecondsSinceEpoch}';
@@ -281,14 +286,13 @@ class QueryClient {
       if (T == double) return double.tryParse(cached) as T?;
       if (T == bool) return (cached == 'true') as T?;
 
-      // For complex types, return decoded JSON (don't cast to T yet - let transformer handle it)
-      if (T == dynamic) {
-        final decoded = jsonDecode(cached);
-        return decoded as T?;
-      }
-
-      // Legacy fallback - try to cast decoded JSON directly
+      // For complex types, decode JSON
       final decoded = jsonDecode(cached);
+
+      // If T is dynamic, return raw decoded data for transformation later
+      if (T == dynamic) return decoded as T;
+
+      // Otherwise cast to specific type (for optimistic updates)
       return decoded as T?;
     } catch (e) {
       return null;
@@ -356,6 +360,7 @@ class QueryClient {
         time.millisecondsSinceEpoch.toString(),
       );
     } catch (e) {
+      print('Error setting cached time: $e');
       // Silent fail
     }
   }
@@ -393,7 +398,8 @@ class QueryClient {
     }
   }
 
-  /// Remove queries from cache and memory
+  /// Remove queries from memory
+  /// // TODO: remove cache too?
   void removeQueries(List<dynamic>? keyPattern) {
     if (keyPattern == null) {
       _queries.clear();

@@ -2,15 +2,15 @@
 // Tests help us catch bugs early and ensure our code behaves as expected
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:persist_signals/testquery/models/query_client_config.model.dart';
-import 'package:persist_signals/testquery/models/query_error.model.dart';
-import 'package:persist_signals/testquery/models/query_key.model.dart';
-import 'package:persist_signals/testquery/models/query_mutation_options.model.dart';
-import 'package:persist_signals/testquery/models/query_options.model.dart';
-import 'package:persist_signals/testquery/query_client.dart';
-import 'package:persist_signals/persist_signals.dart';
+import 'package:persist_signals/signal_query/models/query_client_config.model.dart';
+import 'package:persist_signals/signal_query/models/query_error.model.dart';
+import 'package:persist_signals/signal_query/models/query_key.model.dart';
+import 'package:persist_signals/signal_query/models/query_mutation_options.model.dart';
+import 'package:persist_signals/signal_query/models/query_options.model.dart';
+import 'package:persist_signals/signal_query/client/query_client.dart';
 import 'package:persist_signals/storage/base_persisted_storage.abstract.dart';
-import 'package:persist_signals/testquery/enums/query_status.enum.dart';
+import 'package:persist_signals/signal_query/enums/query_status.enum.dart';
+import 'package:signals/signals_flutter.dart';
 
 // Simple in-memory storage for testing
 class MockStorage implements BasePersistedStorage {
@@ -125,7 +125,6 @@ class TestPost {
 // Mock API functions for testing
 // These simulate real API calls but return test data immediately
 Future<List<dynamic>> mockFetchPosts() async {
-  // Simulate network delay
   await Future.delayed(Duration(milliseconds: 100));
 
   // Return fake post data
@@ -150,16 +149,16 @@ Future<Map<String, dynamic>> mockCreatePost(Map<String, dynamic> data) async {
 
 // This function runs before each test to set up a clean environment
 Future<void> setupQueryClient() async {
-  // Initialize persist_signals first (required for caching)
-  await PersistSignals.init(MockStorage());
+  final storage = MockStorage();
 
   // Initialize our query client with test configuration
   await QueryClient().init(
-    QueryClientConfig(
+    config: QueryClientConfig(
       defaultStaleDuration: Duration(minutes: 1), // Short duration for testing
       defaultCacheDuration: Duration(minutes: 5),
       requestTimeout: Duration(seconds: 5),
     ),
+    storage: storage,
   );
 }
 
@@ -175,7 +174,7 @@ void main() {
   tearDownAll(() {
     QueryClient().disposeAll();
     // Reset PersistSignals for clean state
-    PersistSignals.reset();
+    // PersistSignals.reset();
   });
 
   // setUp runs before EACH test to ensure clean state
@@ -190,17 +189,14 @@ void main() {
     // TEST: Basic query functionality
     test('should create and execute a basic query', () async {
       // ARRANGE: Set up the test data and dependencies
-      final client = QueryClient();
 
       // ACT: Perform the action we want to test
-      final query = client.useQuery<List<TestPost>, List<dynamic>>(
+      final query = QueryClient().useQuery<List<TestPost>, List<dynamic>>(
         ['test-posts'], // Query key (unique identifier)
         mockFetchPosts, // Function to fetch data
         options: QueryOptions(
           transformer: (jsonList) => // Transform JSON to objects
-              (jsonList as List)
-                  .map((json) => TestPost.fromJson(json))
-                  .toList(),
+              (jsonList).map((json) => TestPost.fromJson(json)).toList(),
         ),
       );
 
@@ -226,10 +222,8 @@ void main() {
 
     // TEST: Query error handling
     test('should handle query errors correctly', () async {
-      final client = QueryClient();
-
       // Create a query that will fail
-      final query = client.useQuery<String, String>(
+      final query = QueryClient().useQuery<String, String>(
         ['failing-query'],
         () async {
           throw Exception('Simulated API error');
@@ -264,9 +258,8 @@ void main() {
         ['cached-posts'],
         mockFetchPosts,
         options: QueryOptions(
-          transformer: (jsonList) => (jsonList as List)
-              .map((json) => TestPost.fromJson(json))
-              .toList(),
+          transformer: (jsonList) =>
+              (jsonList).map((json) => TestPost.fromJson(json)).toList(),
         ),
       );
 
@@ -277,9 +270,8 @@ void main() {
         ['cached-posts'],
         mockFetchPosts,
         options: QueryOptions(
-          transformer: (jsonList) => (jsonList as List)
-              .map((json) => TestPost.fromJson(json))
-              .toList(),
+          transformer: (jsonList) =>
+              (jsonList).map((json) => TestPost.fromJson(json)).toList(),
         ),
       );
 
@@ -304,9 +296,8 @@ void main() {
         ['invalidation-test'],
         mockFetchPosts,
         options: QueryOptions(
-          transformer: (jsonList) => (jsonList as List)
-              .map((json) => TestPost.fromJson(json))
-              .toList(),
+          transformer: (jsonList) =>
+              (jsonList).map((json) => TestPost.fromJson(json)).toList(),
         ),
       );
 
@@ -615,6 +606,400 @@ void main() {
         1,
         reason: 'Should deduplicate simultaneous requests',
       );
+    });
+  });
+
+  // GROUP: Query Persistence Tests
+  group('Query Persistence Tests', () {
+    test('should persist and hydrate query data', () async {
+      final storage = MockStorage();
+      final client = QueryClient();
+      await client.init(storage: storage);
+
+      // Create initial query
+      final query1 = client.useQuery<String, String>(
+        ['persistence-test'],
+        () async => 'cached data',
+      );
+
+      await Future.delayed(Duration(milliseconds: 200));
+      expect(query1.data, 'cached data');
+
+      // Simulate app restart by creating new client
+      final newClient = QueryClient();
+      await newClient.init(storage: storage);
+
+      final query2 = newClient.useQuery<String, String>(
+        ['persistence-test'],
+        () async => 'fresh data',
+      );
+
+      await query2.waitForHydration();
+      expect(query2.data, 'cached data', reason: 'Should load from cache');
+    });
+
+    test('should implement stale-while-revalidate behavior', () async {
+      final client = QueryClient();
+      int fetchCount = 0;
+
+      final query = client.useQuery<String, String>(
+        ['stale-revalidate'],
+        () async {
+          fetchCount++;
+          await Future.delayed(Duration(milliseconds: 50));
+          return 'data $fetchCount';
+        },
+        options: QueryOptions(
+          staleDuration: Duration(milliseconds: 100),
+          cacheDuration: Duration(minutes: 1),
+        ),
+      );
+
+      // Initial fetch
+      await Future.delayed(Duration(milliseconds: 100));
+      expect(fetchCount, 1);
+      expect(query.data, 'data 1');
+
+      // Wait for staleness
+      await Future.delayed(Duration(milliseconds: 150));
+      expect(query.isStale, true);
+
+      // Create new query - should show stale data and refetch in background
+      final query2 = client.useQuery<String, String>(
+        ['stale-revalidate'],
+        () async {
+          fetchCount++;
+          return 'data $fetchCount';
+        },
+        options: QueryOptions(
+          staleDuration: Duration(milliseconds: 100),
+          cacheDuration: Duration(minutes: 1),
+        ),
+      );
+
+      // Should immediately have stale data
+      expect(query2.data, 'data 1');
+
+      // Wait for background refresh
+      await Future.delayed(Duration(milliseconds: 100));
+      expect(fetchCount, 2);
+      expect(query2.data, 'data 2');
+    });
+  });
+
+  // GROUP: Query Prefetching Tests
+  group('Query Prefetching Tests', () {
+    test('should prefetch queries correctly', () async {
+      final client = QueryClient();
+      int fetchCount = 0;
+
+      Future<String> mockFetch() async {
+        fetchCount++;
+        return 'prefetched data $fetchCount';
+      }
+
+      // Prefetch without creating a query
+      await client.prefetchQuery<String, String>(
+        ['prefetch-test'],
+        mockFetch,
+      );
+
+      expect(fetchCount, 1);
+
+      // Now create the actual query - should use prefetched data
+      final query = client.useQuery<String, String>(
+        ['prefetch-test'],
+        mockFetch,
+      );
+
+      await query.waitForHydration();
+      expect(query.data, 'prefetched data 1');
+      expect(fetchCount, 1, reason: 'Should not fetch again');
+    });
+  });
+
+  // GROUP: Background Refresh Tests
+  group('Background Refresh Tests', () {
+    test('should handle background refresh intervals', () async {
+      final client = QueryClient();
+      int fetchCount = 0;
+
+      final query = client.useQuery<String, String>(
+        ['background-refresh'],
+        () async {
+          fetchCount++;
+          return 'data $fetchCount';
+        },
+        options: QueryOptions(
+          refetchInterval: Duration(milliseconds: 100),
+        ),
+      );
+
+      // Initial fetch
+      await Future.delayed(Duration(milliseconds: 50));
+      expect(fetchCount, 1);
+
+      // Wait for background refresh
+      await Future.delayed(Duration(milliseconds: 150));
+      expect(fetchCount, 2);
+
+      // Wait for another refresh
+      await Future.delayed(Duration(milliseconds: 100));
+      expect(fetchCount, 3);
+
+      // Stop the query to prevent more refreshes
+      query.dispose();
+    });
+  });
+
+  // GROUP: Dependent Queries Tests
+  group('Dependent Queries Tests', () {
+    test('should handle dependent queries correctly', () async {
+      final client = QueryClient();
+
+      // First query
+      final userQuery =
+          client.useQuery<Map<String, dynamic>, Map<String, dynamic>>(
+        ['user', 1],
+        () async => {'id': 1, 'name': 'John', 'companyId': 5},
+      );
+
+      await Future.delayed(Duration(milliseconds: 100));
+
+      // Dependent query
+      final companyQuery =
+          client.useQuery<Map<String, dynamic>, Map<String, dynamic>>(
+        ['company', userQuery.data?['companyId']],
+        () async {
+          final companyId = userQuery.data?['companyId'];
+          if (companyId == null) throw Exception('No company ID');
+          return {'id': companyId, 'name': 'Acme Corp'};
+        },
+        options: QueryOptions(
+          enabled: userQuery.data != null,
+        ),
+      );
+
+      await Future.delayed(Duration(milliseconds: 100));
+
+      expect(userQuery.status, QueryStatus.success);
+      expect(companyQuery.status, QueryStatus.success);
+      expect(companyQuery.data?['name'], 'Acme Corp');
+    });
+  });
+
+  // GROUP: Complex Invalidation Tests
+  group('Complex Invalidation Tests', () {
+    test('should handle hierarchical invalidation patterns', () async {
+      final client = QueryClient();
+
+      // Create hierarchical queries
+      final queries = [
+        client.useQuery(['posts'], () async => 'posts data'),
+        client.useQuery(['posts', 1], () async => 'post 1 data'),
+        client.useQuery(['posts', 1, 'comments'], () async => 'comments data'),
+        client.useQuery(['users'], () async => 'users data'),
+      ];
+
+      await Future.delayed(Duration(milliseconds: 200));
+
+      // All should be fresh initially
+      for (final query in queries) {
+        expect(query.isStale, false);
+      }
+
+      // Invalidate posts queries
+      client.invalidateQueries(['posts']);
+
+      // Only posts queries should be stale
+      expect(queries[0].isStale, true); // ['posts']
+      expect(queries[1].isStale, true); // ['posts', 1]
+      expect(queries[2].isStale, true); // ['posts', 1, 'comments']
+      expect(queries[3].isStale, false); // ['users']
+    });
+  });
+
+  // GROUP: Watch Signals Tests
+  group('Watch Signals Tests', () {
+    test('should refetch when watched signals change', () async {
+      final client = QueryClient();
+      int fetchCount = 0;
+      final userId = signal(1);
+
+      final query = client.useQuery<String, String>(
+        ['user-data', userId.value],
+        () async {
+          fetchCount++;
+          return 'user ${userId.value} data (fetch $fetchCount)';
+        },
+        options: QueryOptions(
+          watchSignals: [userId],
+        ),
+      );
+
+      await Future.delayed(Duration(milliseconds: 100));
+      expect(fetchCount, 1);
+      expect(query.data, 'user 1 data (fetch 1)');
+
+      // Change watched signal
+      userId.value = 2;
+      await Future.delayed(Duration(milliseconds: 100));
+
+      expect(fetchCount, 2);
+      expect(query.data, 'user 2 data (fetch 2)');
+    });
+  });
+
+  // GROUP: Query Timeout Tests
+  group('Query Timeout Tests', () {
+    test('should timeout slow queries', () async {
+      final client = QueryClient();
+
+      final query = client.useQuery<String, String>(
+        ['timeout-test'],
+        () async {
+          await Future.delayed(Duration(seconds: 2));
+          return 'slow data';
+        },
+        options: QueryOptions(
+          requestTimeout: Duration(milliseconds: 100),
+        ),
+      );
+
+      await Future.delayed(Duration(milliseconds: 200));
+
+      expect(query.status, QueryStatus.timeout);
+      expect(query.error?.type, QueryErrorType.timeout);
+    });
+  });
+
+  // GROUP: Optimistic Updates Tests
+  group('Optimistic Updates Tests', () {
+    test('should handle optimistic updates with manual management', () async {
+      final client = QueryClient();
+
+      // Set up initial data
+      final postsQuery = client.useQuery<List<TestPost>, List<dynamic>>(
+        ['posts'],
+        () async => [
+          {'id': 1, 'title': 'Post 1', 'body': 'Body 1'},
+          {'id': 2, 'title': 'Post 2', 'body': 'Body 2'},
+        ],
+        options: QueryOptions(
+          transformer: (jsonList) =>
+              jsonList.map((json) => TestPost.fromJson(json)).toList(),
+        ),
+      );
+
+      await Future.delayed(Duration(milliseconds: 200));
+      expect(postsQuery.data!.length, 2);
+
+      // Optimistic update: add new post immediately
+      final currentPosts = postsQuery.data!;
+      final optimisticPost =
+          TestPost(id: 999, title: 'Optimistic Post', body: 'Optimistic Body');
+      client.setQueryData(['posts'], [...currentPosts, optimisticPost]);
+
+      // Should immediately show optimistic update
+      expect(postsQuery.data!.length, 3);
+      expect(postsQuery.data!.any((p) => p.id == 999), true);
+
+      // Create mutation that will replace optimistic update
+      final createMutation = client.useMutation<TestPost, Map<String, dynamic>>(
+        (data) async {
+          await Future.delayed(Duration(milliseconds: 100));
+          return TestPost.fromJson({...data, 'id': 3});
+        },
+        options: MutationOptions(
+          onSuccess: (data) {
+            // Replace optimistic update with real data
+            final currentPosts =
+                client.getQueryData<List<TestPost>>(['posts']) ?? [];
+            final updatedPosts = currentPosts.where((p) => p.id != 999).toList()
+              ..add(data as TestPost);
+            client.setQueryData(['posts'], updatedPosts);
+          },
+        ),
+      );
+
+      await createMutation.mutate({'title': 'Real Post', 'body': 'Real Body'});
+
+      // Should now have real data
+      expect(postsQuery.data!.length, 3);
+      expect(postsQuery.data!.any((p) => p.id == 3), true);
+      expect(postsQuery.data!.any((p) => p.id == 999), false);
+    });
+  });
+
+  // GROUP: Query Disposal Tests
+  group('Query Disposal Tests', () {
+    test('should dispose queries and clean up resources', () async {
+      final client = QueryClient();
+
+      final query = client.useQuery<String, String>(
+        ['disposal-test'],
+        () async => 'test data',
+      );
+
+      await Future.delayed(Duration(milliseconds: 100));
+      expect(query.data, 'test data');
+
+      // Dispose query
+      query.dispose();
+
+      // Query should be removed from client
+      expect(client.getQueryData<String>(['disposal-test']), isNull);
+    });
+  });
+
+  // GROUP: Query Enabled/Disabled Tests
+  group('Query Enabled/Disabled Tests', () {
+    test('should not execute disabled queries', () async {
+      final client = QueryClient();
+      int fetchCount = 0;
+
+      final query = client.useQuery<String, String>(
+        ['disabled-test'],
+        () async {
+          fetchCount++;
+          return 'data';
+        },
+        options: QueryOptions(
+          enabled: false,
+        ),
+      );
+
+      await Future.delayed(Duration(milliseconds: 200));
+
+      expect(fetchCount, 0, reason: 'Disabled queries should not execute');
+      expect(query.status, QueryStatus.idle);
+    });
+
+    test('should execute query when enabled becomes true', () async {
+      final client = QueryClient();
+      int fetchCount = 0;
+      bool isEnabled = false;
+
+      final query = client.useQuery<String, String>(
+        ['conditional-test'],
+        () async {
+          fetchCount++;
+          return 'data $fetchCount';
+        },
+        options: QueryOptions(
+          enabled: isEnabled,
+        ),
+      );
+
+      await Future.delayed(Duration(milliseconds: 100));
+      expect(fetchCount, 0);
+
+      // Enable the query
+      isEnabled = true;
+      await query.refetch();
+
+      expect(fetchCount, 1);
+      expect(query.data, 'data 1');
     });
   });
 }

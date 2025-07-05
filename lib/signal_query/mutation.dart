@@ -1,8 +1,8 @@
-import 'package:persist_signals/testquery/models/query_error.model.dart';
-import 'package:persist_signals/testquery/models/query_mutation_options.model.dart';
+import 'package:persist_signals/signal_query/models/query_error.model.dart';
+import 'package:persist_signals/signal_query/models/query_mutation_options.model.dart';
 import 'package:signals/signals_flutter.dart';
 import 'enums/query_status.enum.dart';
-import 'query_client.dart';
+import 'client/query_client.dart';
 
 class Mutation<TData extends Object?, TVariables extends Object?> {
   final String mutationKey; // Track this mutation for disposal

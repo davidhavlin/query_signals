@@ -1,5 +1,5 @@
-import 'package:persist_signals/testquery/models/infinite_query_data.model.dart';
-import 'package:persist_signals/testquery/models/query_error.model.dart';
+import 'package:persist_signals/signal_query/models/infinite_query_data.model.dart';
+import 'package:persist_signals/signal_query/models/query_error.model.dart';
 
 /// Configuration options for infinite queries
 class InfiniteQueryOptions<TData extends Object?, TQueryFnData extends Object?,
