@@ -1,7 +1,7 @@
 import 'package:example/posts/models/post_reaction.model.dart';
-import 'package:persist_signals/storage/storable.types.dart';
+import 'package:persist_signals/p_signals/models/storable.model.dart';
 
-class Post extends HasId {
+class Post extends StorableWithId {
   @override
   final String id;
   final int userId;

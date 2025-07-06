@@ -1,7 +1,7 @@
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
+import 'package:persist_signals/p_signals/models/storable.model.dart';
 import 'package:persist_signals/storage/base_persisted_storage.abstract.dart';
-import 'package:persist_signals/storage/storable.types.dart';
 import 'package:sembast/sembast_io.dart';
 
 class StorageService implements BasePersistedStorage {
@@ -76,7 +76,7 @@ class StorageService implements BasePersistedStorage {
   }
 
   // Type-safe helper for Storable objects
-  Future<void> setStorableRecords<T extends Storable>(
+  Future<void> setStorableRecords<T extends StorableWithId>(
     String storeName,
     List<T> items,
   ) async {
@@ -85,7 +85,7 @@ class StorageService implements BasePersistedStorage {
   }
 
   // Add or update multiple records using their existing IDs
-  Future<void> addRecords<T extends Storable>(
+  Future<void> addRecords<T extends StorableWithId>(
     String storeName,
     List<T> items,
   ) async {
@@ -100,7 +100,10 @@ class StorageService implements BasePersistedStorage {
     });
   }
 
-  Future<T> addRecord<T extends Storable>(String storeName, T item) async {
+  Future<T> addRecord<T extends StorableWithId>(
+    String storeName,
+    T item,
+  ) async {
     final store = _getStore(storeName);
 
     return _db.transaction((txn) async {

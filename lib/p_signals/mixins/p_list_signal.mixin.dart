@@ -19,7 +19,9 @@ mixin PListSignalMixin<T> on ListSignal<T> {
 
   @override
   List<T> get value {
-    if (!_persistable.isHydrated) _persistable.init().ignore();
+    if (!_persistable.isHydrated && !_persistable.isLoading) {
+      _persistable.init().ignore();
+    }
     return super.value;
   }
 
@@ -146,6 +148,13 @@ class _PersistableListSignalImpl<T> extends PersistableSignalBase<List<T>> {
 
   @override
   bool get clearCache => _shouldClearCache;
+
+  @override
+  List<T> get fallback => (_signal as dynamic).fallback ?? _signal.value;
+
+  @override
+  void Function(Object, StackTrace)? get errorHandler =>
+      (_signal as dynamic).errorHandler;
 
   @override
   List<T> getCurrentValue() => _signal.value;

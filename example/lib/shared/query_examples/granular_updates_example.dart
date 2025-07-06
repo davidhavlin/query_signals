@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:persist_signals/storage/storable.types.dart';
+import 'package:persist_signals/p_signals/models/storable.model.dart';
 import 'package:persist_signals/signal_query/models/query_mutation_options.model.dart';
 import 'package:persist_signals/signal_query/models/query_options.model.dart';
 import 'package:signals/signals_flutter.dart';
-import 'package:persist_signals/signal_query/query_client.dart';
+import 'package:persist_signals/signal_query/client/query_client.dart';
 
 // ==================== MODEL WITH HasId ====================
 
 /// Post model that implements HasId for efficient granular storage
-class Post implements HasId {
+class Post implements StorableWithId {
   @override
   final String id;
   final int userId;

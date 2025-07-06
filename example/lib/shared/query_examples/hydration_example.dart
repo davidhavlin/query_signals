@@ -2,7 +2,7 @@ import 'package:example/shared/service/storage.service.dart';
 import 'package:example/shared/stores/testquery.store.dart';
 import 'package:flutter/material.dart';
 import 'package:signals/signals_flutter.dart';
-import 'package:persist_signals/signal_query/query_client.dart';
+import 'package:persist_signals/signal_query/client/query_client.dart';
 import '../stores/app.store.dart';
 
 // ==================== HYDRATION EXAMPLE ====================

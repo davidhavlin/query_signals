@@ -15,7 +15,9 @@ mixin PMapSignalMixin<K, V> on MapSignal<K, V> {
 
   @override
   Map<K, V> get value {
-    if (!_persistable.isHydrated) _persistable.init().ignore();
+    if (!_persistable.isHydrated && !_persistable.isLoading) {
+      _persistable.init().ignore();
+    }
     return super.value;
   }
 
@@ -107,6 +109,13 @@ class _PersistableMapSignalImpl<K, V> extends PersistableSignalBase<Map<K, V>> {
 
   @override
   bool get clearCache => _shouldClearCache;
+
+  @override
+  Map<K, V> get fallback => (_signal as dynamic).fallback ?? _signal.value;
+
+  @override
+  void Function(Object, StackTrace)? get errorHandler =>
+      (_signal as dynamic).errorHandler;
 
   @override
   Map<K, V> getCurrentValue() => _signal.value;

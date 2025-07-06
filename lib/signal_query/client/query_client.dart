@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:persist_signals/p_signals/client/p_signals_client.dart';
+import 'package:persist_signals/p_signals/models/storable.model.dart';
 import 'package:persist_signals/storage/base_persisted_storage.abstract.dart';
-import 'package:persist_signals/storage/storable.types.dart';
 import 'package:persist_signals/signal_query/models/infinite_query_data.model.dart';
 import 'package:persist_signals/signal_query/models/infinite_query_options.model.dart';
 import 'package:persist_signals/signal_query/models/query_client_config.model.dart';
@@ -311,8 +311,8 @@ class QueryClient {
       // Use efficient record storage if granular updates enabled
       if (granularUpdates && data is List && data.isNotEmpty) {
         final firstItem = (data as List).first;
-        if (firstItem is HasId) {
-          final records = (data as List<HasId>)
+        if (firstItem is StorableWithId) {
+          final records = (data as List<StorableWithId>)
               .map(
                 (item) => {
                   'id': item.id,
@@ -617,10 +617,10 @@ class QueryClient {
       setQueryData(key, list as TList);
 
       // Also update storage efficiently (single record)
-      if (updatedItem is HasId) {
+      if (updatedItem is StorableWithId) {
         final storeKey = 'query_data_${queryKey.toString()}';
         final data = (updatedItem as dynamic).toJson() as Map<String, dynamic>;
-        _storage.setRecord(storeKey, (updatedItem as HasId).id, data);
+        _storage.setRecord(storeKey, (updatedItem as StorableWithId).id, data);
       }
     }
   }
@@ -647,10 +647,10 @@ class QueryClient {
     setQueryData(key, list as TList);
 
     // Also update storage efficiently (single record)
-    if (newItem is HasId) {
+    if (newItem is StorableWithId) {
       final storeKey = 'query_data_${queryKey.toString()}';
       final data = (newItem as dynamic).toJson() as Map<String, dynamic>;
-      _storage.setRecord(storeKey, (newItem as HasId).id, data);
+      _storage.setRecord(storeKey, (newItem as StorableWithId).id, data);
     }
   }
 
