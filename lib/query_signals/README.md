@@ -66,7 +66,7 @@ class PostStore {
     fetchPostsApi, // Pure API function
     options: QueryOptions(
       staleDuration: Duration(minutes: 5), // When to background refresh
-      cacheDuration: Duration(hours: 1), // How long to cache
+      // cacheDuration: Duration(hours: 1), // Optional: defaults to infinite
       transformer: (jsonList) => // Transform raw JSON to models
           jsonList.map((json) => Post.fromJson(json)).toList(),
     ),

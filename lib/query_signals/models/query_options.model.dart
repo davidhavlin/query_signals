@@ -32,9 +32,15 @@ class QueryOptions<TData extends Object?, TQueryFnData extends Object?> {
   /// Request timeout (overrides QueryClient default)
   final Duration? requestTimeout;
 
-  /// Signals to watch - query will automatically refetch when any of these change
+  /// Signals to watch - query will be marked as stale when any of these change
   /// Example: watchSignals: [userId, selectedCategory, searchTerm]
+  /// By default, query is just marked stale and will refetch on next access
   final List<Signal>? watchSignals;
+
+  /// Whether to immediately refetch when watched signals change (default: false)
+  /// When false: signal changes just mark query as stale for next fetch
+  /// When true: signal changes immediately trigger a refetch
+  final bool refetchOnSignalChange;
 
   /// Automatically refetch at regular intervals (like React Query's refetchInterval)
   ///
@@ -60,6 +66,7 @@ class QueryOptions<TData extends Object?, TQueryFnData extends Object?> {
     this.granularUpdates = false,
     this.requestTimeout,
     this.watchSignals,
+    this.refetchOnSignalChange = false,
     this.refetchInterval,
     this.refetchIntervalFn,
   });

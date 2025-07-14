@@ -46,6 +46,10 @@ class Query<TData extends Object?, TQueryFnData extends Object?> {
   Timer? _timeoutTimer;
   Timer? _refetchIntervalTimer;
 
+  // Signal watching - store values for sync comparison or effect cleanup
+  List<dynamic>? _lastSignalValues;
+  void Function()? _signalWatcherDispose;
+
   Query({
     required this.queryKey,
     required this.queryFn,
@@ -80,7 +84,13 @@ class Query<TData extends Object?, TQueryFnData extends Object?> {
   QueryStatus get status => _status.value;
 
   /// The transformed data (null if loading or error)
-  TData? get data => _data.value;
+  TData? get data {
+    // For sync approach (refetchOnSignalChange = false), check signals
+    if (!options.refetchOnSignalChange && _checkSignalChanges()) {
+      markStale();
+    }
+    return _data.value;
+  }
 
   /// Error object if query failed
   QueryError? get error => _error.value;
@@ -93,6 +103,11 @@ class Query<TData extends Object?, TQueryFnData extends Object?> {
 
   /// Whether data is stale and should be refetched (calculated dynamically)
   bool get isStale {
+    // For sync approach (refetchOnSignalChange = false), check signals
+    if (!options.refetchOnSignalChange && _checkSignalChanges()) {
+      markStale();
+    }
+
     // If manually invalidated, always stale
     if (_isStale.value) return true;
 
@@ -163,30 +178,61 @@ class Query<TData extends Object?, TQueryFnData extends Object?> {
     }
   }
 
-  /// Set up signal watching - subscribes to signals and invalidates query when they change
+  /// Set up signal watching - choose between sync and reactive approaches
   void _setupSignalWatching() {
     final watchSignals = options.watchSignals;
     if (watchSignals == null || watchSignals.isEmpty) return;
 
-    // Create an effect that watches all signals and invalidates query when any change
-    effect(() {
-      // Read all watched signals to create dependencies
-      for (final signal in watchSignals) {
-        signal.value; // Reading the value creates the dependency
+    // Store initial values
+    _lastSignalValues = <dynamic>[];
+    for (final signal in watchSignals) {
+      _lastSignalValues!.add(signal.value);
+    }
+
+    // Choose approach based on refetchOnSignalChange
+    if (options.refetchOnSignalChange) {
+      // Reactive approach - immediately refetch when signals change
+      _signalWatcherDispose = effect(() {
+        bool hasChanged = false;
+
+        // Check each signal for changes
+        for (int i = 0; i < watchSignals.length; i++) {
+          final currentValue = watchSignals[i].value;
+          if (currentValue != _lastSignalValues![i]) {
+            _lastSignalValues![i] = currentValue;
+            hasChanged = true;
+          }
+        }
+
+        // Immediately refetch if something changed
+        if (hasChanged && options.enabled) {
+          markStale();
+          refetch();
+        }
+      });
+    }
+    // For refetchOnSignalChange = false, we use sync checking in data getter
+  }
+
+  /// Check if watched signals have changed (sync approach)
+  bool _checkSignalChanges() {
+    final watchSignals = options.watchSignals;
+    if (watchSignals == null ||
+        watchSignals.isEmpty ||
+        _lastSignalValues == null) {
+      return false;
+    }
+
+    bool hasChanged = false;
+    for (int i = 0; i < watchSignals.length; i++) {
+      final currentValue = watchSignals[i].value;
+      if (currentValue != _lastSignalValues![i]) {
+        _lastSignalValues![i] = currentValue;
+        hasChanged = true;
       }
+    }
 
-      // Skip the first run (initialization)
-      if (_status.value == QueryStatus.idle) return;
-
-      // Invalidate and refetch when any watched signal changes
-      print('Signal dependency changed, invalidating query: ${queryKey.key}');
-      invalidate();
-
-      // Auto-refetch if query is enabled
-      if (options.enabled) {
-        sync();
-      }
-    });
+    return hasChanged;
   }
 
   /// Load and transform cached data if available
@@ -276,6 +322,11 @@ class Query<TData extends Object?, TQueryFnData extends Object?> {
 
   /// Manually refetch data (e.g., pull-to-refresh) with request deduplication
   Future<TData?> refetch() async {
+    // For sync approach (refetchOnSignalChange = false), check signals
+    if (!options.refetchOnSignalChange && _checkSignalChanges()) {
+      markStale();
+    }
+
     // Return existing request if already in progress
     if (_currentFetch != null) {
       return _currentFetch;
@@ -464,6 +515,11 @@ class Query<TData extends Object?, TQueryFnData extends Object?> {
 
   // ==================== MANUAL CONTROLS ====================
 
+  /// Mark query as stale without refetching
+  void markStale() {
+    _isStale.value = true;
+  }
+
   /// Mark query as stale and refetch if enabled
   void invalidate() {
     _isStale.value = true;
@@ -552,17 +608,12 @@ class Query<TData extends Object?, TQueryFnData extends Object?> {
     // No interval configured
     if (interval == null) return;
 
-    print(
-        'Starting refetch interval: ${interval.inSeconds}s for query: ${queryKey.key}');
-
     _refetchIntervalTimer = Timer.periodic(interval, (timer) {
       // Only refetch if query is still enabled
       if (!options.enabled) {
         _stopRefetchInterval();
         return;
       }
-
-      print('Refetch interval triggered for query: ${queryKey.key}');
 
       // Background refetch (no loading state)
       _fetchInBackground();
@@ -587,6 +638,10 @@ class Query<TData extends Object?, TQueryFnData extends Object?> {
     _timeoutTimer?.cancel();
     _stopRefetchInterval();
     _currentFetch = null;
+
+    // Clean up signal watching
+    _signalWatcherDispose?.call();
+    _lastSignalValues = null;
 
     // Dispose all signals
     _status.dispose();

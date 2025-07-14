@@ -3,7 +3,7 @@ class QueryClientConfig {
   /// Default stale duration - how long data stays fresh (no background refetch)
   final Duration defaultStaleDuration;
 
-  /// Default cache duration - how long data stays in memory
+  /// Default cache duration - how long data stays in memory (default: infinite)
   final Duration defaultCacheDuration;
 
   /// Whether to refetch on window focus (web/desktop)
@@ -17,7 +17,8 @@ class QueryClientConfig {
 
   const QueryClientConfig({
     this.defaultStaleDuration = const Duration(minutes: 5),
-    this.defaultCacheDuration = const Duration(minutes: 30),
+    this.defaultCacheDuration =
+        const Duration(days: 365 * 100), // Effectively infinite
     this.refetchOnWindowFocus = true,
     this.refetchOnReconnect = true,
     this.requestTimeout = const Duration(seconds: 30),

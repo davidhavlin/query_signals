@@ -739,12 +739,12 @@ void main() {
       await Future.delayed(Duration(milliseconds: 50));
       expect(fetchCount, 1);
 
-      // Wait for background refresh
-      await Future.delayed(Duration(milliseconds: 150));
+      // Wait for first background refresh (100ms timer)
+      await Future.delayed(Duration(milliseconds: 75));
       expect(fetchCount, 2);
 
-      // Wait for another refresh
-      await Future.delayed(Duration(milliseconds: 100));
+      // Wait for second background refresh (200ms total)
+      await Future.delayed(Duration(milliseconds: 75));
       expect(fetchCount, 3);
 
       // Stop the query to prevent more refreshes
@@ -821,13 +821,13 @@ void main() {
 
   // GROUP: Watch Signals Tests
   group('Watch Signals Tests', () {
-    test('should refetch when watched signals change', () async {
+    test('should mark query as stale when watched signals change', () async {
       final client = QueryClient();
       int fetchCount = 0;
       final userId = signal(1);
 
       final query = client.useQuery<String, String>(
-        ['user-data', userId.value],
+        ['user-data'],
         () async {
           fetchCount++;
           return 'user ${userId.value} data (fetch $fetchCount)';
@@ -840,8 +840,45 @@ void main() {
       await Future.delayed(Duration(milliseconds: 100));
       expect(fetchCount, 1);
       expect(query.data, 'user 1 data (fetch 1)');
+      expect(query.isStale, false);
 
-      // Change watched signal
+      // Change watched signal - should mark as stale but not refetch
+      userId.value = 2;
+      await Future.delayed(Duration(milliseconds: 100));
+
+      expect(fetchCount, 1); // No immediate refetch
+      expect(query.isStale, true); // But query is now stale
+      expect(query.data, 'user 1 data (fetch 1)'); // Data unchanged
+
+      // Next access should refetch
+      await query.refetch();
+      expect(fetchCount, 2);
+      expect(query.data, 'user 2 data (fetch 2)');
+    });
+
+    test('should immediately refetch when refetchOnSignalChange is true',
+        () async {
+      final client = QueryClient();
+      int fetchCount = 0;
+      final userId = signal(1);
+
+      final query = client.useQuery<String, String>(
+        ['user-data-immediate'],
+        () async {
+          fetchCount++;
+          return 'user ${userId.value} data (fetch $fetchCount)';
+        },
+        options: QueryOptions(
+          watchSignals: [userId],
+          refetchOnSignalChange: true,
+        ),
+      );
+
+      await Future.delayed(Duration(milliseconds: 100));
+      expect(fetchCount, 1);
+      expect(query.data, 'user 1 data (fetch 1)');
+
+      // Change watched signal - should immediately refetch
       userId.value = 2;
       await Future.delayed(Duration(milliseconds: 100));
 

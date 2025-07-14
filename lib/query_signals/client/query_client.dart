@@ -26,7 +26,7 @@ import '../infinite_query.dart';
 /// // Initialize once in main() with your defaults
 /// await QueryClient().init(QueryClientConfig(
 ///   defaultStaleDuration: Duration(minutes: 10),
-///   defaultCacheDuration: Duration(hours: 2),
+///   // defaultCacheDuration: Duration(hours: 2), // Uncomment to override infinite default
 /// ));
 ///
 /// // Use anywhere without specifying durations
@@ -59,7 +59,7 @@ class QueryClient {
   /// ```dart
   /// await QueryClient().init(QueryClientConfig(
   ///   defaultStaleDuration: Duration(minutes: 10),
-  ///   defaultCacheDuration: Duration(hours: 2),
+  ///   // defaultCacheDuration: Duration(hours: 2), // Uncomment to override infinite default
   /// ));
   /// ```
   Future<void> init({
@@ -129,6 +129,10 @@ class QueryClient {
       refetchOnMount: finalOptions.refetchOnMount,
       granularUpdates: finalOptions.granularUpdates,
       requestTimeout: finalOptions.requestTimeout,
+      refetchInterval: finalOptions.refetchInterval,
+      refetchIntervalFn: finalOptions.refetchIntervalFn,
+      watchSignals: finalOptions.watchSignals,
+      refetchOnSignalChange: finalOptions.refetchOnSignalChange,
     );
 
     // Create new query with transformer support
