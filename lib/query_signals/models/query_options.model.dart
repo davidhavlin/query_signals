@@ -1,4 +1,4 @@
-import 'package:persist_signals/signal_query/models/query_error.model.dart';
+import 'package:query_signals/query_signals/models/query_error.model.dart';
 import 'package:signals/signals_flutter.dart';
 
 /// Configuration options for queries - similar to React Query's useQuery options

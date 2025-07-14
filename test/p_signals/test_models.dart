@@ -1,4 +1,4 @@
-import 'package:persist_signals/p_signals/models/storable.model.dart';
+import 'package:query_signals/p_signals/models/storable.model.dart';
 
 /// Test user model for complex object testing
 class TestUser extends StorableWithId {

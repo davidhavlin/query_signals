@@ -1,5 +1,5 @@
 import 'package:example/posts/models/post_reaction.model.dart';
-import 'package:persist_signals/p_signals/models/storable.model.dart';
+import 'package:query_signals/p_signals/models/storable.model.dart';
 
 class Post extends StorableWithId {
   @override

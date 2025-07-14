@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:persist_signals/p_signals/models/storable.model.dart';
-import 'package:persist_signals/signal_query/models/query_mutation_options.model.dart';
-import 'package:persist_signals/signal_query/models/query_options.model.dart';
+import 'package:query_signals/p_signals/models/storable.model.dart';
+import 'package:query_signals/query_signals/client/query_client.dart';
+import 'package:query_signals/query_signals/models/query_mutation_options.model.dart';
+import 'package:query_signals/query_signals/models/query_options.model.dart';
 import 'package:signals/signals_flutter.dart';
-import 'package:persist_signals/signal_query/client/query_client.dart';
 
 // ==================== MODEL WITH HasId ====================
 
@@ -128,7 +128,7 @@ class GranularPostsStore {
       staleDuration: Duration(minutes: 10),
       cacheDuration: Duration(hours: 2),
       transformer: (jsonList) =>
-          (jsonList as List).map((json) => Post.fromJson(json)).toList(),
+          (jsonList).map((json) => Post.fromJson(json)).toList(),
     ),
   );
 

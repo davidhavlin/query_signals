@@ -18,7 +18,7 @@ A powerful, type-safe, and feature-rich library for persistent state management 
 ### 1. Initialize the Client
 
 ```dart
-import 'package:persist_signals/p_signals/client/p_signals_client.dart';
+import 'package:query_signals/p_signals/client/p_signals_client.dart';
 
 void main() {
   // Initialize with your storage implementation
@@ -31,7 +31,7 @@ void main() {
 ### 2. Create Signals
 
 ```dart
-import 'package:persist_signals/p_signals/p_signal.dart';
+import 'package:query_signals/p_signals/p_signal.dart';
 
 // Simple primitive signal
 final counter = PSignal<int>(

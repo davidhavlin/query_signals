@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:persist_signals/signal_query/models/infinite_query_options.model.dart';
-import 'package:persist_signals/signal_query/client/query_client.dart';
-import 'package:persist_signals/p_signals/client/p_signals_client.dart';
-import 'package:persist_signals/storage/base_persisted_storage.abstract.dart';
-import 'package:persist_signals/signal_query/enums/query_status.enum.dart';
+import 'package:query_signals/query_signals/models/infinite_query_options.model.dart';
+import 'package:query_signals/query_signals/client/query_client.dart';
+import 'package:query_signals/p_signals/client/p_signals_client.dart';
+import 'package:query_signals/storage/base_persisted_storage.abstract.dart';
+import 'package:query_signals/query_signals/enums/query_status.enum.dart';
 
 /// Simple in-memory storage for testing
 class TestStorage extends BasePersistedStorage {

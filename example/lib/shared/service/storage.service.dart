@@ -1,7 +1,7 @@
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
-import 'package:persist_signals/p_signals/models/storable.model.dart';
-import 'package:persist_signals/storage/base_persisted_storage.abstract.dart';
+import 'package:query_signals/p_signals/models/storable.model.dart';
+import 'package:query_signals/storage/base_persisted_storage.abstract.dart';
 import 'package:sembast/sembast_io.dart';
 
 class StorageService implements BasePersistedStorage {

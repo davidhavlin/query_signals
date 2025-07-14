@@ -1,8 +1,8 @@
 import 'package:example/shared/stores/testquery.store.dart';
-import 'package:persist_signals/signal_query/mixins/query_mixin.dart';
-import 'package:persist_signals/signal_query/models/query_mutation_options.model.dart';
-import 'package:persist_signals/signal_query/models/query_options.model.dart';
 import 'package:flutter/material.dart';
+import 'package:query_signals/query_signals/mixins/query_mixin.dart';
+import 'package:query_signals/query_signals/models/query_mutation_options.model.dart';
+import 'package:query_signals/query_signals/models/query_options.model.dart';
 import 'package:signals/signals_flutter.dart';
 
 // ==================== SIMPLE USAGE EXAMPLES ====================

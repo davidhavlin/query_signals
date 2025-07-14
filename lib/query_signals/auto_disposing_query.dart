@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:persist_signals/signal_query/models/query_options.model.dart';
+import 'package:query_signals/query_signals/models/query_options.model.dart';
 import 'package:signals/signals_flutter.dart';
 import 'query.dart';
 import 'client/query_client.dart';

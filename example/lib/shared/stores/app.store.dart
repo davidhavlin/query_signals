@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:example/shared/enums/some.enum.dart';
-import 'package:persist_signals/p_signals/p_enum_signal.dart';
-import 'package:persist_signals/p_signals/p_map_signal.dart';
-import 'package:persist_signals/p_signals/p_signal.dart';
-import 'package:persist_signals/testgeneration/annotations/hydrated.dart';
+import 'package:query_signals/p_signals/p_enum_signal.dart';
+import 'package:query_signals/p_signals/p_map_signal.dart';
+import 'package:query_signals/p_signals/p_signal.dart';
+import 'package:query_signals/testgeneration/annotations/hydrated.dart';
 
 part 'app.store.g.dart';
 

@@ -1,4 +1,4 @@
-import 'package:persist_signals/signal_query/models/query_error.model.dart';
+import 'package:query_signals/query_signals/models/query_error.model.dart';
 
 /// Configuration for mutations (create/update/delete operations)
 class MutationOptions {

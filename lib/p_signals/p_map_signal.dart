@@ -1,6 +1,6 @@
-import 'package:persist_signals/p_signals/client/p_signals_client.dart';
-import 'package:persist_signals/p_signals/mixins/p_map_signal.mixin.dart';
-import 'package:persist_signals/storage/base_persisted_storage.abstract.dart';
+import 'package:query_signals/p_signals/client/p_signals_client.dart';
+import 'package:query_signals/p_signals/mixins/p_map_signal.mixin.dart';
+import 'package:query_signals/storage/base_persisted_storage.abstract.dart';
 import 'package:signals/signals_flutter.dart';
 
 /// A persisted map signal that automatically saves key-value pairs to storage

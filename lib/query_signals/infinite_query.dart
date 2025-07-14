@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'package:persist_signals/signal_query/models/infinite_query_data.model.dart';
-import 'package:persist_signals/signal_query/models/infinite_query_options.model.dart';
-import 'package:persist_signals/signal_query/models/query_error.model.dart';
-import 'package:persist_signals/signal_query/models/query_key.model.dart';
+import 'package:query_signals/query_signals/models/infinite_query_data.model.dart';
+import 'package:query_signals/query_signals/models/infinite_query_options.model.dart';
+import 'package:query_signals/query_signals/models/query_error.model.dart';
+import 'package:query_signals/query_signals/models/query_key.model.dart';
 import 'package:signals/signals_flutter.dart';
 import 'enums/query_status.enum.dart';
 import 'client/query_client.dart';

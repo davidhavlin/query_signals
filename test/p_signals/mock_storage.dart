@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:persist_signals/storage/base_persisted_storage.abstract.dart';
+import 'package:query_signals/storage/base_persisted_storage.abstract.dart';
 
 /// Mock storage implementation for testing
 class MockStorage extends BasePersistedStorage {

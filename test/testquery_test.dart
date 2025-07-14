@@ -2,14 +2,14 @@
 // Tests help us catch bugs early and ensure our code behaves as expected
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:persist_signals/signal_query/models/query_client_config.model.dart';
-import 'package:persist_signals/signal_query/models/query_error.model.dart';
-import 'package:persist_signals/signal_query/models/query_key.model.dart';
-import 'package:persist_signals/signal_query/models/query_mutation_options.model.dart';
-import 'package:persist_signals/signal_query/models/query_options.model.dart';
-import 'package:persist_signals/signal_query/client/query_client.dart';
-import 'package:persist_signals/storage/base_persisted_storage.abstract.dart';
-import 'package:persist_signals/signal_query/enums/query_status.enum.dart';
+import 'package:query_signals/query_signals/models/query_client_config.model.dart';
+import 'package:query_signals/query_signals/models/query_error.model.dart';
+import 'package:query_signals/query_signals/models/query_key.model.dart';
+import 'package:query_signals/query_signals/models/query_mutation_options.model.dart';
+import 'package:query_signals/query_signals/models/query_options.model.dart';
+import 'package:query_signals/query_signals/client/query_client.dart';
+import 'package:query_signals/storage/base_persisted_storage.abstract.dart';
+import 'package:query_signals/query_signals/enums/query_status.enum.dart';
 import 'package:signals/signals_flutter.dart';
 
 // Simple in-memory storage for testing

@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:persist_signals/storage/base_persisted_storage.abstract.dart';
+import 'package:query_signals/storage/base_persisted_storage.abstract.dart';
 
 /// Global instance manager for PSignalsClient
 class PSignalsClient {

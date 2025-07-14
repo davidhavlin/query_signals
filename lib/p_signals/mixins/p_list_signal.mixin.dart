@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:convert';
 
-import 'package:persist_signals/storage/base_persisted_storage.abstract.dart';
+import 'package:query_signals/storage/base_persisted_storage.abstract.dart';
 import 'package:signals/signals_flutter.dart';
 import 'p_signal.mixin.dart';
 

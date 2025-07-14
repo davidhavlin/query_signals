@@ -1,7 +1,7 @@
-name: persist_signals
-description: A powerful persisted signals package for Flutter, built on top of signals_flutter
-version: 0.0.1
-homepage: https://github.com/davidtorosyan/persist_signals
+name: query_signals
+description: A comprehensive signals toolkit for Flutter with persistence, queries, and state management
+version: 0.1.1
+homepage: https://github.com/davidhavlin/query_signals
 
 environment:
   sdk: '>=3.0.0 <4.0.0'

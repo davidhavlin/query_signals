@@ -1,4 +1,4 @@
-import 'package:persist_signals/p_signals/p_signal.dart';
+import 'package:query_signals/p_signals/p_signal.dart';
 
 /// A persisted enum signal with robust null handling and type safety
 ///

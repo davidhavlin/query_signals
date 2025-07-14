@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:persist_signals/storage/base_persisted_storage.abstract.dart';
+import 'package:query_signals/storage/base_persisted_storage.abstract.dart';
 import 'package:signals/signals_flutter.dart';
 
 /// Base class that contains all common persistence logic

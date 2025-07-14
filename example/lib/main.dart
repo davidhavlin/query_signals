@@ -1,8 +1,8 @@
 import 'package:example/app.dart';
 import 'package:example/shared/service/storage.service.dart';
 import 'package:example/shared/stores/app.store.dart';
-import 'package:persist_signals/signal_query/client/query_client.dart';
 import 'package:flutter/material.dart';
+import 'package:query_signals/query_signals/client/query_client.dart';
 
 final q = QueryClient();
 

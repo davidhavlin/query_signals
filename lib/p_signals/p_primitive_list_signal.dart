@@ -1,8 +1,8 @@
 import 'dart:convert';
 
-import 'package:persist_signals/p_signals/client/p_signals_client.dart';
-import 'package:persist_signals/p_signals/mixins/p_list_signal.mixin.dart';
-import 'package:persist_signals/storage/base_persisted_storage.abstract.dart';
+import 'package:query_signals/p_signals/client/p_signals_client.dart';
+import 'package:query_signals/p_signals/mixins/p_list_signal.mixin.dart';
+import 'package:query_signals/storage/base_persisted_storage.abstract.dart';
 import 'package:signals/signals_flutter.dart';
 
 /// A persisted list signal that saves the ENTIRE list as one blob to storage

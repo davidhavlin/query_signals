@@ -2,7 +2,7 @@ import 'package:example/posts/components/post_card.dart';
 import 'package:example/posts/models/posts_page.model.dart';
 import 'package:example/shared/service/api.service.dart';
 import 'package:flutter/material.dart';
-import 'package:persist_signals/signal_query/mixins/query_mixin.dart';
+import 'package:query_signals/query_signals.dart';
 import 'package:signals/signals_flutter.dart';
 
 class PostsPaginatedRoute extends StatefulWidget {

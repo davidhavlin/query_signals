@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:persist_signals/p_signals/client/p_signals_client.dart';
-import 'package:persist_signals/p_signals/p_signal.dart';
+import 'package:query_signals/p_signals/client/p_signals_client.dart';
+import 'package:query_signals/p_signals/p_signal.dart';
 
 import 'mock_storage.dart';
 import 'test_models.dart';

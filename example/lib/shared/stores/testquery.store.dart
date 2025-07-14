@@ -1,8 +1,5 @@
 import 'package:example/shared/service/api.service.dart';
-import 'package:persist_signals/signal_query/models/query_mutation_options.model.dart';
-import 'package:persist_signals/signal_query/models/query_options.model.dart';
-import 'package:persist_signals/signal_query/client/query_client.dart';
-import 'package:persist_signals/signal_query/query.dart';
+import 'package:query_signals/query_signals.dart';
 
 // ==================== DATA MODELS ====================
 

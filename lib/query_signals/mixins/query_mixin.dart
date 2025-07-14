@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:persist_signals/signal_query/models/infinite_query_options.model.dart';
-import 'package:persist_signals/signal_query/models/query_mutation_options.model.dart';
-import 'package:persist_signals/signal_query/models/query_options.model.dart';
+import 'package:query_signals/query_signals/models/infinite_query_options.model.dart';
+import 'package:query_signals/query_signals/models/query_mutation_options.model.dart';
+import 'package:query_signals/query_signals/models/query_options.model.dart';
 import '../query.dart';
 import '../mutation.dart';
 import '../infinite_query.dart';
