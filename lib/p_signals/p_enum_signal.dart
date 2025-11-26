@@ -35,8 +35,8 @@ class PEnumSignal<T extends Enum?> extends PSignal<T> {
     super.clearCache,
     super.fallbackValue,
     super.onError,
-  }) : assert(
-            values.contains(value), 'Initial value must be in the values list');
+  }) : assert(value == null || values.contains(value),
+            'Initial value must be in the values list or null');
 
   @override
   T Function(String)? get customDecoder => (value) {

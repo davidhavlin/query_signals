@@ -1,5 +1,5 @@
 // Main export file for query_signals package
-library query_signals;
+library;
 
 // P_Signals exports
 export 'p_signals/p_signal.dart';
@@ -14,7 +14,6 @@ export 'p_signals/models/storable.model.dart';
 export 'query_signals/query.dart';
 export 'query_signals/infinite_query.dart';
 export 'query_signals/mutation.dart';
-export 'query_signals/auto_disposing_query.dart';
 export 'query_signals/client/query_client.dart';
 export 'query_signals/models/query_options.model.dart';
 export 'query_signals/models/infinite_query_options.model.dart';

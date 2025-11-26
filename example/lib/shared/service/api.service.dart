@@ -96,12 +96,28 @@ class ApiService {
     String path, {
     Params? params,
     Options? options,
+    CancelToken? cancelToken,
   }) async {
-    return await client.get<T>(path, queryParameters: params, options: options);
+    return await client.get<T>(
+      path,
+      queryParameters: params,
+      options: options,
+      cancelToken: cancelToken,
+    );
   }
 
-  Future<T> $get<T>(String path, {Params? params, Options? options}) async {
-    final response = await get<T>(path, params: params, options: options);
+  Future<T> $get<T>(
+    String path, {
+    Params? params,
+    Options? options,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await get<T>(
+      path,
+      params: params,
+      options: options,
+      cancelToken: cancelToken,
+    );
     return response.data!;
   }
 
@@ -110,12 +126,14 @@ class ApiService {
     Object? data,
     Params? params,
     Options? options,
+    CancelToken? cancelToken,
   }) async {
     return await client.post<T>(
       path,
       queryParameters: params,
       data: data,
       options: options,
+      cancelToken: cancelToken,
     );
   }
 
@@ -124,12 +142,14 @@ class ApiService {
     Object? data,
     Params? params,
     Options? options,
+    CancelToken? cancelToken,
   }) async {
     final response = await post<T>(
       path,
       params: params,
       data: data,
       options: options,
+      cancelToken: cancelToken,
     );
 
     return response.data!;
@@ -140,12 +160,14 @@ class ApiService {
     Object? data,
     Params? params,
     Options? options,
+    CancelToken? cancelToken,
   }) async {
     return await client.patch<T>(
       path,
       queryParameters: params,
       data: data,
       options: options,
+      cancelToken: cancelToken,
     );
   }
 
@@ -154,12 +176,14 @@ class ApiService {
     Object? data,
     Params? params,
     Options? options,
+    CancelToken? cancelToken,
   }) async {
     final response = await patch<T>(
       path,
       params: params,
       data: data,
       options: options,
+      cancelToken: cancelToken,
     );
 
     return response.data!;
@@ -169,16 +193,28 @@ class ApiService {
     String path, {
     Params? params,
     Options? options,
+    CancelToken? cancelToken,
   }) async {
     return await client.delete<T>(
       path,
       queryParameters: params,
       options: options,
+      cancelToken: cancelToken,
     );
   }
 
-  Future<T> $delete<T>(String path, {Params? params, Options? options}) async {
-    final response = await delete<T>(path, params: params, options: options);
+  Future<T> $delete<T>(
+    String path, {
+    Params? params,
+    Options? options,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await delete<T>(
+      path,
+      params: params,
+      options: options,
+      cancelToken: cancelToken,
+    );
 
     return response.data!;
   }
