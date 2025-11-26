@@ -11,6 +11,7 @@ import 'package:query_signals/query_signals/models/query_options.model.dart';
 import '../query.dart';
 import '../mutation.dart';
 import '../infinite_query.dart';
+import '../types/query.type.dart';
 
 /// Central manager for all queries and mutations - similar to React Query's QueryClient
 /// Handles caching, invalidation, and query lifecycle
@@ -94,7 +95,7 @@ class QueryClient {
   Query<TData, TQueryFnData>
       useQuery<TData extends Object?, TQueryFnData extends Object?>(
     List<dynamic> key,
-    Future<TQueryFnData> Function() queryFn, {
+    QueryFn<TQueryFnData> queryFn, {
     QueryOptions<TData, TQueryFnData>? options,
   }) {
     // Ensure client is initialized
@@ -107,6 +108,9 @@ class QueryClient {
     // Return existing query if already created
     if (_queries.containsKey(queryKey)) {
       final existingQuery = _queries[queryKey] as Query<TData, TQueryFnData>;
+
+      // Mark as reused since we're returning an existing query
+      existingQuery.isReused = true;
 
       // Handle refetchOnMount for existing queries
       final shouldRefetchOnMount = options?.refetchOnMount ?? true;
@@ -181,6 +185,9 @@ class QueryClient {
     if (_infiniteQueries.containsKey(queryKey)) {
       final existingQuery = _infiniteQueries[queryKey]
           as InfiniteQuery<TData, TQueryFnData, TPageParam>;
+
+      // Mark as reused since we're returning an existing infinite query
+      existingQuery.isReused = true;
 
       // Handle refetchOnMount for existing queries
       final shouldRefetchOnMount = options?.refetchOnMount ?? true;
@@ -691,7 +698,7 @@ class QueryClient {
   Future<void>
       prefetchQuery<TData extends Object?, TQueryFnData extends Object?>(
     List<dynamic> key,
-    Future<TQueryFnData> Function() queryFn, {
+    QueryFn<TQueryFnData> queryFn, {
     QueryOptions<TData, TQueryFnData>? options,
   }) async {
     final query = useQuery(key, queryFn, options: options);
