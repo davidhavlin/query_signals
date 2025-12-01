@@ -23,7 +23,7 @@ class _SimpleWidgetExampleState extends State<SimpleWidgetExample>
   // Query is automatically tracked and disposed when widget is disposed
   late final post = useQuery<Post, Map<String, dynamic>>(
     ['posts', tempId],
-    () => fetchPostApi(tempId),
+    (_) => fetchPostApi(tempId),
     options: QueryOptions(
       staleDuration: Duration(minutes: 15),
       transformer: (json) => Post.fromJson(json),
@@ -59,14 +59,14 @@ class _EvenSimplerExampleState extends State<EvenSimplerExample>
   // Super clean syntax with automatic disposal
   late final posts = query<List<Post>, List<dynamic>>(
     key: ['posts'],
-    fetch: fetchPostsApi,
-    transform: (json) => (json as List).map((e) => Post.fromJson(e)).toList(),
+    fetch: (_) => fetchPostsApi(),
+    transform: (json) => json.map((e) => Post.fromJson(e)).toList(),
     staleDuration: Duration(minutes: 10),
   );
 
   late final singlePost = query<Post, Map<String, dynamic>>(
     key: ['posts', 5],
-    fetch: () => fetchPostApi(5),
+    fetch: (_) => fetchPostApi(5),
     transform: (json) => Post.fromJson(json),
   );
 
@@ -102,7 +102,7 @@ class _MutationExampleState extends State<MutationExample> with QueryMixin {
   // Queries and mutations auto-disposed
   late final posts = useQuery<List<Post>, List<dynamic>>(
     ['posts'],
-    fetchPostsApi,
+    (_) => fetchPostsApi(),
     options: QueryOptions(
       transformer: (json) => json.map((e) => Post.fromJson(e)).toList(),
     ),

@@ -8,6 +8,7 @@ import 'package:query_signals/query_signals/models/query_client_config.model.dar
 import 'package:query_signals/query_signals/models/query_key.model.dart';
 import 'package:query_signals/query_signals/models/query_mutation_options.model.dart';
 import 'package:query_signals/query_signals/models/query_options.model.dart';
+import '../logging.dart';
 import '../query.dart';
 import '../mutation.dart';
 import '../infinite_query.dart';
@@ -53,6 +54,14 @@ class QueryClient {
   /// Access to current configuration
   QueryClientConfig get config => _config;
 
+  /// Access to the logger for this query client
+  QuerySignalsLogger get logger => querySignalsLogger;
+
+  /// Create a query-specific logger with the given log level override
+  QueryLogger createQueryLogger(QuerySignalsLogLevel? queryLogLevel) {
+    return QueryLogger(logger, queryLogLevel);
+  }
+
   /// Initialize the client with your persist_signals storage and optional configuration
   /// Call this once in your app initialization
   ///
@@ -72,6 +81,9 @@ class QueryClient {
     if (config != null) {
       _config = config;
     }
+
+    // Configure global logging level
+    querySignalsLogger.setGlobalLogLevel(_config.logLevel);
 
     _storage = storage;
     PSignalsClient.init(storage);
@@ -346,7 +358,7 @@ class QueryClient {
       final encoded = jsonEncode(data);
       await _storage.set(storeKey, encoded);
     } catch (e) {
-      print('Error setting cached data: $e');
+      logger.error('Error setting cached data', error: e);
       // Silent fail - cache is not critical
     }
   }
@@ -371,7 +383,7 @@ class QueryClient {
         time.millisecondsSinceEpoch.toString(),
       );
     } catch (e) {
-      print('Error setting cached time: $e');
+      logger.error('Error setting cached time', error: e);
       // Silent fail
     }
   }

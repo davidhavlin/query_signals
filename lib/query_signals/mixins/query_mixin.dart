@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:query_signals/query_signals/models/infinite_query_options.model.dart';
 import 'package:query_signals/query_signals/models/query_mutation_options.model.dart';
 import 'package:query_signals/query_signals/models/query_options.model.dart';
+import 'package:query_signals/query_signals/types/query.type.dart';
 import '../query.dart';
 import '../mutation.dart';
 import '../infinite_query.dart';
 import '../client/query_client.dart';
-import '../enums/query_status.enum.dart';
 
 /// Mixin that provides automatic query disposal when widget is disposed
 /// Use this for simple, direct query usage in widgets without manual disposal
@@ -49,7 +49,7 @@ mixin QueryMixin<T extends StatefulWidget> on State<T> {
   Query<TData, TQueryFnData>
       useQuery<TData extends Object?, TQueryFnData extends Object?>(
     List<dynamic> key,
-    Future<TQueryFnData> Function() queryFn, {
+    QueryFn<TQueryFnData> queryFn, {
     QueryOptions<TData, TQueryFnData>? options,
   }) {
     final query = client.useQuery<TData, TQueryFnData>(
@@ -60,7 +60,7 @@ mixin QueryMixin<T extends StatefulWidget> on State<T> {
 
     // Only track as owned if this is a new query
     // If query already existed, it might be shared with other widgets
-    if (!client.hasQuery(key)) {
+    if (!query.isReused) {
       _ownedQueries.add(query);
     }
 
@@ -91,6 +91,48 @@ mixin QueryMixin<T extends StatefulWidget> on State<T> {
     return infiniteQuery;
   }
 
+  /// Register an existing query for automatic disposal tracking
+  /// Useful when you want to use queries from stores but still get automatic cleanup
+  ///
+  /// Example:
+  /// ```dart
+  /// late final postDetail = useQ(postsStore.postDetail(widget.postId));
+  /// ```
+  Query<TData, TQueryFnData>
+      useQ<TData extends Object?, TQueryFnData extends Object?>(
+    Query<TData, TQueryFnData> query,
+  ) {
+    // Only track as owned if this is a new query instance
+    // If query already exists, it might be shared with other widgets
+    if (!query.isReused) {
+      _ownedQueries.add(query);
+    }
+    return query;
+  }
+
+  /// Register an existing infinite query for automatic disposal tracking
+  InfiniteQuery<TData, TQueryFnData, TPageParam> useInfiniteQ<
+      TData extends Object?,
+      TQueryFnData extends Object?,
+      TPageParam extends Object?>(
+    InfiniteQuery<TData, TQueryFnData, TPageParam> query,
+  ) {
+    if (!query.isReused) {
+      _ownedInfiniteQueries.add(query);
+    }
+    return query;
+  }
+
+  /// Register an existing mutation for automatic disposal tracking
+  Mutation<TData, TVariables>
+      useM<TData extends Object?, TVariables extends Object?>(
+    Mutation<TData, TVariables> mutation,
+  ) {
+    // Track this mutation for disposal
+    _ownedMutations.add(mutation);
+    return mutation;
+  }
+
   /// Create a mutation with automatic disposal tracking
   Mutation<TData, TVariables>
       useMutation<TData extends Object?, TVariables extends Object?>(
@@ -107,8 +149,10 @@ mixin QueryMixin<T extends StatefulWidget> on State<T> {
 
   @override
   void dispose() {
-    // Only dispose queries that this widget "owns" (created first)
-    // This prevents disposing shared queries used by multiple widgets
+    print(
+        '🗑️ QueryMixin dispose: queries=${_ownedQueries.length}, infinite=${_ownedInfiniteQueries.length}, mutations=${_ownedMutations.length}');
+
+    // Cancel ongoing requests and dispose queries that this widget owns
     for (final query in _ownedQueries) {
       query.dispose();
     }
@@ -169,7 +213,7 @@ mixin SimpleQueryMixin<T extends StatefulWidget> on State<T> {
   Query<TData, TQueryFnData>
       query<TData extends Object?, TQueryFnData extends Object?>({
     required List<dynamic> key,
-    required Future<TQueryFnData> Function() fetch,
+    required QueryFn<TQueryFnData> fetch,
     required TData Function(TQueryFnData) transform,
     Duration? staleDuration,
     Duration? cacheDuration,

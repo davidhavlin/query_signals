@@ -1,5 +1,6 @@
 import 'package:query_signals/query_signals/models/query_error.model.dart';
 import 'package:signals/signals_flutter.dart';
+import '../logging.dart';
 
 /// Configuration options for queries - similar to React Query's useQuery options
 class QueryOptions<TData extends Object?, TQueryFnData extends Object?> {
@@ -57,6 +58,14 @@ class QueryOptions<TData extends Object?, TQueryFnData extends Object?> {
   /// Example: `(data, error) => error != null ? Duration(seconds: 5) : Duration(minutes: 1)`
   final Duration? Function(TData? data, QueryError? error)? refetchIntervalFn;
 
+  /// Logging level for this specific query - overrides global log level if set
+  /// Useful for debugging specific queries or silencing noisy ones
+  /// Examples:
+  /// - `null` - use global log level (default)
+  /// - `QuerySignalsLogLevel.debug` - enable debug logging for this query only
+  /// - `QuerySignalsLogLevel.none` - disable logging for this query
+  final QuerySignalsLogLevel? logLevel;
+
   const QueryOptions({
     this.staleDuration,
     this.cacheDuration,
@@ -69,5 +78,6 @@ class QueryOptions<TData extends Object?, TQueryFnData extends Object?> {
     this.refetchOnSignalChange = false,
     this.refetchInterval,
     this.refetchIntervalFn,
+    this.logLevel,
   });
 }

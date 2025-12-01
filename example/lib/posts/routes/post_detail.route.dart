@@ -3,6 +3,7 @@ import 'package:example/posts/models/post.model.dart';
 import 'package:example/comments/models/comment.model.dart';
 import 'package:example/posts/stores/posts.store.dart';
 import 'package:flutter/material.dart';
+import 'package:query_signals/query_signals.dart';
 import 'package:signals/signals_flutter.dart';
 
 class PostDetailRoute extends StatefulWidget {
@@ -13,41 +14,63 @@ class PostDetailRoute extends StatefulWidget {
   State<PostDetailRoute> createState() => _PostDetailRouteState();
 }
 
-class _PostDetailRouteState extends State<PostDetailRoute> {
-  // Get queries from store - cleaner architecture
-  late final postDetail = postsStore.postDetail(widget.postId);
-  late final postComments = postsStore.postComments(widget.postId);
-  late final deleteMutation = postsStore.deletePost(
-    onSuccess: () {
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Post deleted successfully')));
-    },
-    onError: (error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to delete: ${error.message}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    },
+class _PostDetailRouteState extends State<PostDetailRoute> with QueryMixin {
+  // Use store queries with automatic disposal via useQ/useM
+  late final postDetail = useQ(postsStore.postDetail(widget.postId));
+  late final postComments = useQ(postsStore.postComments(widget.postId));
+  late final deleteMutation = useM(
+    postsStore.deletePost(
+      onSuccess: () {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Post deleted successfully')));
+      },
+      onError: (error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete: ${error.message}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      },
+    ),
   );
-  late final updateMutation = postsStore.updatePostMutation(
-    onSuccess: (updatedPost) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Post updated successfully!')));
-    },
-    onError: (error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to update: ${error.message}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    },
+  late final updateMutation = useM(
+    postsStore.updatePostMutation(
+      onSuccess: (updatedPost) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Post updated successfully!')));
+      },
+      onError: (error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update: ${error.message}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      },
+    ),
   );
+
+  // Alternative: Direct query creation with useQuery/useMutation
+  // Uncomment to see the difference:
+
+  // late final postDetail = useQuery<Post, Map<String, dynamic>>(
+  //   ['post-detail', widget.postId],
+  //   () => postsStore.fetchPostDetail(widget.postId),
+  //   options: QueryOptions(
+  //     staleDuration: Duration(minutes: 15),
+  //     cacheDuration: Duration(hours: 1),
+  //     transformer: (json) => Post.fromJson(json),
+  //   ),
+  // );
+
+  // late final deleteMutation = useMutation<void, String>(
+  //   (postId) async => await api.$delete('/posts/$postId'),
+  //   options: MutationOptions(/* ... */),
+  // );
 
   void _handleEdit() {
     final post = postDetail.data;

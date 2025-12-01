@@ -1,6 +1,10 @@
 import 'package:dio/dio.dart';
 
-/// Represents a function that fetches data and optionally accepts a cancel token
-typedef QueryFn<TQueryFnData extends Object?> = Future<TQueryFnData> Function({
-  CancelToken? cancelToken,
-});
+class QueryFnContext {
+  final CancelToken cancelToken;
+  final List<dynamic> queryKey;
+
+  QueryFnContext({required this.cancelToken, required this.queryKey});
+}
+
+typedef QueryFn<T> = Future<T> Function(QueryFnContext ctx);

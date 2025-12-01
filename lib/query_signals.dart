@@ -15,6 +15,7 @@ export 'query_signals/query.dart';
 export 'query_signals/infinite_query.dart';
 export 'query_signals/mutation.dart';
 export 'query_signals/client/query_client.dart';
+export 'query_signals/types/query.type.dart';
 export 'query_signals/models/query_options.model.dart';
 export 'query_signals/models/infinite_query_options.model.dart';
 export 'query_signals/models/query_mutation_options.model.dart';

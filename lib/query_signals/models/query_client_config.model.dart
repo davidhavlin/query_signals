@@ -1,3 +1,5 @@
+import '../logging.dart';
+
 /// Configuration for QueryClient default behaviors
 class QueryClientConfig {
   /// Default stale duration - how long data stays fresh (no background refetch)
@@ -15,6 +17,10 @@ class QueryClientConfig {
   /// Request timeout duration
   final Duration requestTimeout;
 
+  /// Global logging level for the entire query_signals package
+  /// Individual queries can override this with their own logLevel
+  final QuerySignalsLogLevel logLevel;
+
   const QueryClientConfig({
     this.defaultStaleDuration = const Duration(minutes: 5),
     this.defaultCacheDuration =
@@ -22,5 +28,6 @@ class QueryClientConfig {
     this.refetchOnWindowFocus = true,
     this.refetchOnReconnect = true,
     this.requestTimeout = const Duration(seconds: 30),
+    this.logLevel = QuerySignalsLogLevel.none,
   });
 }

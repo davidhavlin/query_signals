@@ -122,7 +122,7 @@ class GranularPostsStore {
   /// Each post update only touches 1 record in storage instead of saving 1000+ items!
   late final posts = _client.useQuery<List<Post>, List<dynamic>>(
     ['posts'],
-    fetchManyPostsApi,
+    (_) => fetchManyPostsApi(),
     options: QueryOptions(
       granularUpdates: true, // 🔥 Enable efficient storage!
       staleDuration: Duration(minutes: 10),

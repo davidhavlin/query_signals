@@ -79,26 +79,28 @@ class TestQueryStore {
   /// })
   /// ```
   late final posts = _client.useQuery<List<Post>, List<dynamic>>(
-    ['posts'], // Cache key
-    fetchPostsApi, // Raw API call
+    ['posts'],
+    (_) => fetchPostsApi(), // Don't need context? Just ignore with _
     options: QueryOptions(
-      staleDuration: Duration(minutes: 30), // When to background refresh
-      cacheDuration: Duration(hours: 1), // How long to keep in cache
-      transformer:
-          (jsonList) => // Transform raw JSON to models
-              jsonList.map((json) => Post.fromJson(json)).toList(),
+      staleDuration: Duration(minutes: 30),
+      cacheDuration: Duration(hours: 1),
+      transformer: (jsonList) =>
+          jsonList.map((json) => Post.fromJson(json)).toList(),
     ),
   );
+
+  // Or if you need cancel token:
+  // (ctx) => api.$get('/posts', cancelToken: ctx.cancelToken)
 
   /// Individual post query - great for detail pages
   /// Each post gets its own cache entry with key ['posts', id]
   Query<Post, Map<String, dynamic>> getPost(int id) =>
       _client.useQuery<Post, Map<String, dynamic>>(
-        ['posts', id], // Hierarchical cache key
-        () => fetchPostApi(id), // API call for specific post
+        ['posts', id],
+        (_) => fetchPostApi(id),
         options: QueryOptions(
-          staleDuration: Duration(minutes: 15), // Refresh more frequently
-          transformer: (json) => Post.fromJson(json), // JSON to Post
+          staleDuration: Duration(minutes: 15),
+          transformer: (json) => Post.fromJson(json),
         ),
       );
 
@@ -190,7 +192,7 @@ class TestQueryStore {
   void prefetchPost(int id) =>
       _client.prefetchQuery<Post, Map<String, dynamic>>(
         ['posts', id],
-        () => fetchPostApi(id),
+        (_) => fetchPostApi(id),
         options: QueryOptions(transformer: (json) => Post.fromJson(json)),
       );
 
