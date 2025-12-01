@@ -10,6 +10,9 @@ class Mutation<TData extends Object?, TVariables extends Object?> {
   final MutationOptions options;
   final QueryClient _client;
 
+  /// Whether this mutation has been disposed - prevents signal updates after disposal
+  bool _isDisposed = false;
+
   late final Signal<QueryStatus> _status;
   late final Signal<TData?> _data;
   late final Signal<QueryError?> _error;
@@ -54,13 +57,17 @@ class Mutation<TData extends Object?, TVariables extends Object?> {
 
   Future<TData?> mutate(TVariables variables) async {
     try {
-      _status.value = QueryStatus.loading;
-      _error.value = null;
+      if (!_isDisposed) {
+        _status.value = QueryStatus.loading;
+        _error.value = null;
+      }
 
       final result = await mutationFn(variables);
 
-      _data.value = result;
-      _status.value = QueryStatus.success;
+      if (!_isDisposed) {
+        _data.value = result;
+        _status.value = QueryStatus.success;
+      }
 
       options.onSuccess?.call(result);
       options.onSettled?.call();
@@ -72,8 +79,10 @@ class Mutation<TData extends Object?, TVariables extends Object?> {
           ? e
           : QueryError(e.toString(), QueryErrorType.unknown, e, stackTrace);
 
-      _error.value = queryError;
-      _status.value = QueryStatus.error;
+      if (!_isDisposed) {
+        _error.value = queryError;
+        _status.value = QueryStatus.error;
+      }
 
       options.onError?.call(queryError);
       options.onSettled?.call();
@@ -88,9 +97,24 @@ class Mutation<TData extends Object?, TVariables extends Object?> {
     _error.value = null;
   }
 
+  /// Cancel any ongoing mutation (if possible)
+  void cancel() {
+    // Mutations don't track ongoing requests like queries do
+    // This is mainly for API compatibility with the dispose pattern
+    print('🛑 CANCELING MUTATION: ${mutationKey}');
+  }
+
   /// Clean up mutation when no longer needed
   /// Disposes all signals to prevent memory leaks
   void dispose() {
+    print('🗑️ DISPOSE MUTATION: ${mutationKey}');
+
+    // Mark as disposed to prevent future signal updates
+    _isDisposed = true;
+
+    // Cancel any ongoing operations
+    cancel();
+
     // Remove this mutation from the client first
     _client.disposeMutation(mutationKey);
 
@@ -103,5 +127,7 @@ class Mutation<TData extends Object?, TVariables extends Object?> {
     _isLoadingSignal.dispose();
     _isSuccessSignal.dispose();
     _isErrorSignal.dispose();
+
+    print('✅ DISPOSED MUTATION: ${mutationKey}');
   }
 }

@@ -14,21 +14,24 @@ class PostsStore {
   }
 
   Future<Map<String, dynamic>> fetchPostDetail(
-    String postId, {
-    CancelToken? cancelToken,
-  }) async {
-    final response = await api.$get('/posts/$postId', cancelToken: cancelToken);
+    String postId,
+    QueryFnContext ctx,
+  ) async {
+    final response = await api.$get(
+      '/posts/$postId',
+      cancelToken: ctx.cancelToken,
+    );
     await Future.delayed(Duration(seconds: 4));
     return response;
   }
 
   Future<List<dynamic>> fetchPostComments(
-    String postId, {
-    CancelToken? cancelToken,
-  }) async {
+    String postId,
+    QueryFnContext ctx,
+  ) async {
     final response = await api.$get(
       '/posts/$postId/comments',
-      cancelToken: cancelToken,
+      cancelToken: ctx.cancelToken,
     );
     await Future.delayed(Duration(seconds: 2));
     return response['comments'] as List<dynamic>;
@@ -48,7 +51,7 @@ class PostsStore {
   // Posts list query
   late final posts = _client.useQuery<List<Post>, List<dynamic>>(
     ['posts'], // Cache key
-    fetchPosts, // Pure API function
+    (ctx) => fetchPosts(cancelToken: ctx.cancelToken), // Pure API function
     options: QueryOptions(
       staleDuration: Duration(minutes: 10), // When to background refresh
       cacheDuration: Duration(hours: 5), // How long to cache
@@ -62,10 +65,7 @@ class PostsStore {
   Query<Post, Map<String, dynamic>> postDetail(String postId) {
     return _client.useQuery<Post, Map<String, dynamic>>(
       ['post-detail', postId], // Unique cache key per post
-      ({CancelToken? cancelToken}) => fetchPostDetail(
-        postId,
-        cancelToken: cancelToken,
-      ), // Pure API function
+      (ctx) => fetchPostDetail(postId, ctx), // Pure API function
       options: QueryOptions(
         staleDuration: Duration(minutes: 15), // Post details stay fresh longer
         cacheDuration: Duration(hours: 1), // Cache longer since they're heavier
@@ -78,10 +78,7 @@ class PostsStore {
   Query<List<Comment>, List<dynamic>> postComments(String postId) {
     return _client.useQuery<List<Comment>, List<dynamic>>(
       ['post-comments', postId], // Unique cache key per post
-      ({CancelToken? cancelToken}) => fetchPostComments(
-        postId,
-        cancelToken: cancelToken,
-      ), // Pure API function
+      (ctx) => fetchPostComments(postId, ctx), // Pure API function
       options: QueryOptions(
         staleDuration: Duration(minutes: 5), // Comments refresh more frequently
         cacheDuration: Duration(minutes: 30), // Cache for reasonable time

@@ -45,6 +45,13 @@ class InfiniteQuery<TData extends Object?, TQueryFnData extends Object?,
   final InfiniteQueryOptions<TData, TQueryFnData, TPageParam> options;
   final QueryClient _client;
 
+  /// Whether this infinite query was reused from cache (not newly created)
+  /// Used by mixins to decide whether to dispose it
+  bool isReused = false;
+
+  /// Whether this infinite query has been disposed - prevents signal updates after disposal
+  bool _isDisposed = false;
+
   // Internal signals for reactivity
   late final Signal<QueryStatus> _status;
   late final Signal<InfiniteData<TData>?> _data;
@@ -179,8 +186,10 @@ class InfiniteQuery<TData extends Object?, TQueryFnData extends Object?,
       final cachedData = await _loadCachedData();
 
       if (cachedData != null) {
-        _data.value = cachedData;
-        _status.value = QueryStatus.success;
+        if (!_isDisposed) {
+          _data.value = cachedData;
+          _status.value = QueryStatus.success;
+        }
         _lastFetched.value = await _client.getCachedTime(queryKey);
         _isStale.value = false;
       }
@@ -235,7 +244,7 @@ class InfiniteQuery<TData extends Object?, TQueryFnData extends Object?,
   }
 
   Future<void> _performFirstPageFetch() async {
-    _status.value = QueryStatus.loading;
+    if (!_isDisposed) _status.value = QueryStatus.loading;
     _error.value = null;
 
     try {
@@ -249,8 +258,10 @@ class InfiniteQuery<TData extends Object?, TQueryFnData extends Object?,
         pageParams: [initialPageParam],
       );
 
-      _data.value = infiniteData;
-      _status.value = QueryStatus.success;
+      if (!_isDisposed) {
+        _data.value = infiniteData;
+        _status.value = QueryStatus.success;
+      }
       _lastFetched.value = DateTime.now();
       _isStale.value = false;
 
@@ -260,7 +271,7 @@ class InfiniteQuery<TData extends Object?, TQueryFnData extends Object?,
     } catch (e) {
       final error = _createQueryError(e);
       _error.value = error;
-      _status.value = QueryStatus.error;
+      if (!_isDisposed) _status.value = QueryStatus.error;
       print('Query error: $error');
     }
   }
@@ -390,8 +401,27 @@ class InfiniteQuery<TData extends Object?, TQueryFnData extends Object?,
     );
   }
 
+  /// Cancel any ongoing request
+  void cancel() {
+    print('🛑 CANCELING INFINITE QUERY REQUEST');
+
+    // Clean up request tracking - this prevents the result from being processed
+    // Note: We can't actually cancel the underlying HTTP request without Dio's CancelToken
+    // but we can ignore the result when it arrives
+    _currentFetch = null;
+  }
+
   /// Dispose and clean up resources
   void dispose() {
+    print('🗑️ DISPOSE INFINITE QUERY: ${queryKey.key}');
+
+    // Mark as disposed to prevent future signal updates
+    _isDisposed = true;
+
+    // Cancel any ongoing requests
+    cancel();
+
     // Signals will be automatically disposed by the signals library
+    print('✅ DISPOSED INFINITE QUERY: ${queryKey.key}');
   }
 }
